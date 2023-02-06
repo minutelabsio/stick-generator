@@ -12,24 +12,10 @@
 
   <div class="max-w-[590px]">
     <p class="mb-5">
-      Webnative SDK is a true local-first edge computing stack. Effortlessly
-      give your users:
+      To be able to upload assets you need to connect this device. You will
+      only be able to see assets you upload on a browser that is connected
+      with the same account.
     </p>
-
-    <ul class="mb-6 pl-6 list-disc">
-      <li>
-        <span class="font-bold">modern, passwordless accounts</span>
-        , without a complex and costly cloud-native back-end
-      </li>
-      <li>
-        <span class="font-bold">user-controlled data</span>
-        , secured by default with our encrypted-at-rest file storage protocol
-      </li>
-      <li>
-        <span class="font-bold">local-first functionality</span>
-        , including the ability to work offline and collaborate across multiple devices
-      </li>
-    </ul>
 
     {#if $sessionStore.error === 'Unsupported Browser'}
       <div class="p-4 rounded-lg bg-base-content text-neutral-50">

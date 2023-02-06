@@ -14,29 +14,23 @@
 
   const navItemsUpper = [
     {
-      label: 'Home',
+      label: 'Stick Generation',
       href: '/',
       icon: Home
     },
     {
-      label: 'Photo Gallery Demo',
+      label: 'Upload Assets',
       href: '/gallery/',
       icon: PhotoGallery
     },
     {
-      label: 'Account Settings',
+      label: 'Settings',
       href: '/settings/',
       icon: Settings
     }
   ]
 
   const navItemsLower = [
-    {
-      label: 'About This Template',
-      href: '/about/',
-      icon: About,
-      placement: 'bottom'
-    },
     {
       label: 'Disconnect',
       callback: async () => {
@@ -79,19 +73,6 @@
         class="drawer-overlay !bg-[#262626] !opacity-[.85]"
       />
       <div class="menu p-4 overflow-y-auto w-80 bg-base-100 text-base-content">
-        <!-- Brand -->
-        <div
-          class="flex items-center gap-3 cursor-pointer mb-8"
-          on:click={() => {
-            handleCloseDrawer()
-            goto('/')
-          }}
-        >
-          <BrandLogo />
-          <BrandWordmark />
-          <AlphaTag />
-        </div>
-
         <!-- Upper Menu -->
         <ul>
           {#each navItemsUpper as item}

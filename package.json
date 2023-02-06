@@ -1,6 +1,7 @@
 {
-  "name": "webnative-app-template",
+  "name": "stick-generator",
   "version": "0.1.0",
+  "private": true,
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -56,6 +57,7 @@
     ]
   },
   "dependencies": {
+    "@wellcaffeinated/view-draw": "^0.0.4",
     "clipboard-copy": "^4.0.1",
     "qrcode-svg": "^1.1.0",
     "uint8arrays": "^4.0.2",

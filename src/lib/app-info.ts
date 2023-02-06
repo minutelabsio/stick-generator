@@ -1,5 +1,5 @@
-export const appName = 'Webnative SDK Demo'
-export const appDescription = 'This is another awesome Webnative app.'
+export const appName = 'Stick Generator'
+export const appDescription = 'Stick figure generator for minuteearth'
 export const appURL = 'https://webnative.netlify.app'
 export const appImageURL = `${appURL}/preview.png`
 export const ipfsGatewayUrl = 'runfission.com'

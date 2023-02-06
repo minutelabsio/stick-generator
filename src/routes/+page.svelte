@@ -1,11 +1,11 @@
 <script lang="ts">
   import { sessionStore } from '$src/stores'
-  import Authed from '$components/home/Authed.svelte'
   import Public from '$components/home/Public.svelte'
+  import StickGen from '$components/stick-generator/StickGen.svelte'
 </script>
 
 {#if $sessionStore?.session}
-  <Authed />
+  <StickGen />
 {:else}
   <Public />
 {/if}
