@@ -1,7 +1,10 @@
 <script>
-export let upper = false
+import { croppedImage, loadImage } from '$lib/canvas.js'
+export let cropped = false
 export let images = []
 export let selected
+export let padding = 42
+export let imageWidth = 100
 const select = (item) => () => {
   // deselect
   if (selected === item){
@@ -10,12 +13,30 @@ const select = (item) => () => {
     selected = item
   }
 }
+
+let imageList = []
+
+async function updateImages(images, cropped){
+  if (!cropped){
+    imageList = images.map(src => ({ src, value: src }))
+    return
+  }
+  imageList = await Promise.all(images.map(async (src) => {
+    const img = await loadImage(src)
+    return {
+      src: croppedImage(img, padding),
+      value: src
+    }
+  }))
+}
+
+$: updateImages(images, cropped)
 </script>
 
-<div class="carousel selector stick-selector" class:upper={upper}>
-  {#each images as src}
-    <div on:click={select(src)} class="carousel-item" class:selected="{selected === src}">
-      <img src={src} width="150"/>
+<div class="carousel selector stick-selector">
+  {#each imageList as {src, value}}
+    <div on:click={select(value)} class="carousel-item" class:selected="{selected === value}">
+      <img src={src} width="{imageWidth}"/>
     </div>
   {/each}
 </div>
@@ -24,8 +45,6 @@ const select = (item) => () => {
 .selector {
   cursor: pointer;
   /* border: 1px solid #666; */
-}
-.upper {
 }
 .carousel-item {
   filter: brightness(0.8) saturate(0.8);

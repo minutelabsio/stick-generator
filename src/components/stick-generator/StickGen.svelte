@@ -4,76 +4,28 @@ import { createCanvas } from '@wellcaffeinated/view-draw'
 import ImageSelector from './ImageSelector.svelte'
 import ColorSelector from './ColorSelector.svelte'
 import StickAssets from '$lib/stick-assets.js'
+import {
+  downloadCanvasImage,
+  loadImage,
+  drawImage,
+  getMaskFile,
+  clearCanvas,
+  offscreenCanvas,
+  drawColorMask,
+} from '$lib/canvas.js'
 
 let canvasWrap
 let Drawing
 
-function downloadCanvasImage(canvas, filename = 'stick-figure', timestamp = true) {
-  const link = document.createElement('a')
-  const ts = timestamp ? '-' + (new Date()).toISOString() : ''
-  const name = `${filename}${ts}.png`
-  link.download = name
-  link.href = canvas.toDataURL()
-  link.click()
-}
-
-function loadImage(src){
-  if (!src){ return null }
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.src = src
-    img.onload = () => resolve(img)
-    img.onerror = reject
-  })
-}
-
-function drawImage(ctx, img, x, y){
-  if (!img){ return }
-  ctx.drawImage(img, x, y)
-}
-
-function getMaskFile(file){
-  if (!file){ return null }
-  const parts = file.split('/')
-  parts[parts.length - 1] = 'mask' + parts[parts.length - 1]
-  return parts.join('/')
-}
-
-function clearCanvas(ctx){
-  const { width, height } = ctx.canvas
-  ctx.clearRect(0, 0, width, height)
-}
-
-function getCanvasAsImage(ctx){
-  const img = new Image()
-  img.src = ctx.canvas.toDataURL()
-  return img
-}
-
-function drawToBuffer(srcCtx, fn){
-  const { width, height } = srcCtx.canvas
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  fn(ctx)
-  return canvas
-}
-
-function drawColorMask(ctx, mask, color){
-  if (!mask){ return }
-  const { width, height } = ctx.canvas
-  const gco = ctx.globalCompositeOperation
-  ctx.drawImage(mask, 0, 0)
-  ctx.globalCompositeOperation = 'source-in'
-  ctx.fillStyle = color || 'white'
-  ctx.fillRect(0, 0, width, height)
-  ctx.globalCompositeOperation = gco
+function randomSelection(choices){
+  const i = Math.floor(Math.random() * choices.length)
+  return choices[i]
 }
 
 async function draw(Draw, props){
   if (!Draw){ return }
   const { ctx } = Draw.offcanvas
+  const { width, height } = ctx.canvas
   const [
     body,
     head,
@@ -102,16 +54,16 @@ async function draw(Draw, props){
     loadImage(getMaskFile(props.hat)),
   ])
 
-  const skinColor = drawToBuffer(ctx, (ctx) => {
+  const { canvas: skinColor}  = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, headMask, props.skinColor)
   })
-  const hairColor = drawToBuffer(ctx, (ctx) => {
+  const { canvas: hairColor}  = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, hairMask, props.hairColor)
   })
-  const facialHair = drawToBuffer(ctx, (ctx) => {
+  const { canvas: facialHair } = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, facialHairMask, props.facialHairColor)
   })
-  const hatColor = drawToBuffer(ctx, (ctx) => {
+  const { canvas: hatColor } = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, hatMask, props.hatColor)
   })
 
@@ -123,7 +75,6 @@ async function draw(Draw, props){
   drawImage(ctx, head, 0, 0)
   drawImage(ctx, hairColor, 0, 0)
   drawImage(ctx, hair, 0, 0)
-  drawImage(ctx, facialHair, 0, 0)
   drawImage(ctx, glasses, 0, 0)
   drawImage(ctx, accessory, 0, 0)
   drawImage(ctx, hatColor, 0, 0)
@@ -145,6 +96,17 @@ let facialHairStyle = null
 let facialHairColor = null
 let glasses = null
 let accessory = null
+
+$: if (hat && !hatColor){
+  hatColor = StickAssets.hatColors[0]
+}
+$: if (hairStyle && !hairColor){
+  hairColor = StickAssets.hairColors[0]
+}
+$: if (facialHairStyle && !facialHairColor){
+  facialHairColor = StickAssets.facialHairColors[0]
+}
+
 
 $: stickFigureCfg = {
   hat,
@@ -188,12 +150,12 @@ onMount(() => {
   <div class="controls flex-none">
     <div class="stick-option">
       <h3>Hair Style</h3>
-      <ImageSelector upper bind:selected={hairStyle} images={StickAssets.hairStyles}/>
+      <ImageSelector cropped bind:selected={hairStyle} images={StickAssets.hairStyles}/>
       <ColorSelector bind:selected={hairColor} colors={StickAssets.hairColors}/>
     </div>
     <div class="stick-option">
       <h3>Hat</h3>
-      <ImageSelector bind:selected={hat} images={StickAssets.hats}/>
+      <ImageSelector cropped bind:selected={hat} images={StickAssets.hats}/>
       <ColorSelector bind:selected={hatColor} colors={StickAssets.hatColors}/>
     </div>
     <div class="stick-option">
@@ -202,16 +164,16 @@ onMount(() => {
     </div>
     <div class="stick-option">
       <h3>Facial Hair</h3>
-      <ImageSelector bind:selected={facialHairStyle} images={StickAssets.facialHairStyles}/>
+      <ImageSelector cropped bind:selected={facialHairStyle} images={StickAssets.facialHairStyles}/>
       <ColorSelector bind:selected={facialHairColor} colors={StickAssets.facialHairColors}/>
     </div>
     <div class="stick-option">
       <h3>Glasses</h3>
-      <ImageSelector bind:selected={glasses} images={StickAssets.glasses}/>
+      <ImageSelector cropped bind:selected={glasses} images={StickAssets.glasses}/>
     </div>
     <div class="stick-option">
       <h3>Accessory</h3>
-      <ImageSelector bind:selected={accessory} images={StickAssets.accessories}/>
+      <ImageSelector cropped bind:selected={accessory} images={StickAssets.accessories}/>
     </div>
   </div>
 </div>
