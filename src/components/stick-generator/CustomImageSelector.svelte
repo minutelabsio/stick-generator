@@ -67,9 +67,13 @@ const refresh: () => Promise<void> = async () => {
       return images
     }
 
+    const logAndDefault = (d) => (e) => {
+      console.error(e)
+      return d
+    }
     const [publicImages, privateImages] = await Promise.all([
-      getImages(false),
-      getImages(true)
+      getImages(false).catch(logAndDefault([])),
+      getImages(true).catch(logAndDefault([]))
     ])
     let images = publicImages.concat(privateImages)
     // Sort images by ctime(created at date)

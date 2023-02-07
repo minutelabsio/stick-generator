@@ -44,7 +44,9 @@ export function offscreenCanvas(width, height, fn){
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d', {
+    willReadFrequently: true
+  })
   fn(ctx)
   return ctx
 }

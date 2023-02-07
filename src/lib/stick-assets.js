@@ -20,7 +20,6 @@ const hairColors = [
   '#E4E4E4'
 ]
 const skinColors = [
-  '#000000',
   '#6C402E',
   '#895C4A',
   '#B7775D',
