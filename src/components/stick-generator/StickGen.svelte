@@ -4,6 +4,7 @@ import { createCanvas } from '@wellcaffeinated/view-draw'
 import ImageSelector from './ImageSelector.svelte'
 import ColorSelector from './ColorSelector.svelte'
 import StickAssets from '$lib/stick-assets.js'
+import CustomImageSelector from './CustomImageSelector.svelte'
 import {
   downloadCanvasImage,
   loadImage,
@@ -33,7 +34,8 @@ async function draw(Draw, props){
     facialHairMask,
     glasses,
     accessory,
-    hat
+    hat,
+    custom
   ] = await Promise.all([
     loadImage(StickAssets.bodies[0]),
     loadImage(StickAssets.heads[0]),
@@ -41,7 +43,8 @@ async function draw(Draw, props){
     loadImage(props.facialHairStyle),
     loadImage(props.glasses),
     loadImage(props.accessory),
-    loadImage(props.hat)
+    loadImage(props.hat),
+    loadImage(props.customImage)
   ])
 
   const [
@@ -69,16 +72,22 @@ async function draw(Draw, props){
 
   clearCanvas(ctx)
 
-  drawImage(ctx, body, 0, 0)
-  drawImage(ctx, skinColor, 0, 0)
-  drawImage(ctx, facialHair, 0, 0)
-  drawImage(ctx, head, 0, 0)
-  drawImage(ctx, hairColor, 0, 0)
-  drawImage(ctx, hair, 0, 0)
-  drawImage(ctx, glasses, 0, 0)
-  drawImage(ctx, accessory, 0, 0)
-  drawImage(ctx, hatColor, 0, 0)
-  drawImage(ctx, hat, 0, 0)
+  let layers = [
+    body,
+    skinColor,
+    facialHair,
+    head,
+    hairColor,
+    hair,
+    glasses,
+    accessory,
+    hatColor,
+    hat,
+  ]
+
+  layers.splice(-props.customImageLayerIndex - 1, 0, custom)
+
+  layers.forEach((layer) => drawImage(ctx, layer, 0, 0))
   clearCanvas(Draw.ctx)
   drawImage(Draw.ctx, ctx.canvas, 0, 0)
 }
@@ -96,6 +105,8 @@ let facialHairStyle = null
 let facialHairColor = null
 let glasses = null
 let accessory = null
+let customImage = null
+let customImageLayerIndex = 0
 
 $: if (hat && !hatColor){
   hatColor = StickAssets.hatColors[0]
@@ -107,7 +118,6 @@ $: if (facialHairStyle && !facialHairColor){
   facialHairColor = StickAssets.facialHairColors[0]
 }
 
-
 $: stickFigureCfg = {
   hat,
   hatColor,
@@ -117,9 +127,18 @@ $: stickFigureCfg = {
   facialHairStyle,
   facialHairColor,
   glasses,
-  accessory
+  accessory,
+  customImage,
+  customImageLayerIndex
 }
 $: draw(Drawing, stickFigureCfg)
+
+
+const nLayers = 12
+
+function changeLayer(n){
+  customImageLayerIndex = Math.min(nLayers, Math.max(0, n + customImageLayerIndex))
+}
 
 onMount(() => {
   const cfg = {
@@ -174,6 +193,15 @@ onMount(() => {
     <div class="stick-option">
       <h3>Accessory</h3>
       <ImageSelector cropped bind:selected={accessory} images={StickAssets.accessories}/>
+    </div>
+    <div class="stick-option">
+      <h3>Custom Images</h3>
+      <div class="btn-group">
+        <button class="btn" on:click={() => changeLayer(1)}>«</button>
+        <button class="btn">Layer {nLayers - customImageLayerIndex}</button>
+        <button class="btn" on:click={() => changeLayer(-1)}>»</button>
+      </div>
+      <CustomImageSelector bind:selected={customImage}/>
     </div>
   </div>
 </div>
