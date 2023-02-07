@@ -1,0 +1,1 @@
+import{b as e}from"./preload-helper-ba922b4b.js";import{j as a}from"./singletons-101e6e0d.js";a.disable_scroll_handling;const i=a.goto;a.invalidate;a.invalidateAll;a.preload_data;a.preload_code;a.before_navigate;a.after_navigate;const n=(o,...t)=>i(`${e}${o}`,...t);export{n as g};

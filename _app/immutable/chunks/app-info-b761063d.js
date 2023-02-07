@@ -1,0 +1,1 @@
+const e="Stick Generator",t="Stick figure generator for minuteearth",a="https://webnative.netlify.app",s=`${a}/preview.png`,n="runfission.com",p={creator:"Fission",name:"WAT"};export{e as a,t as b,a as c,s as d,n as i,p as w};
