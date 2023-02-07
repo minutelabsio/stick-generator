@@ -5,10 +5,17 @@ export let colors = [
   'green',
   'blue'
 ]
-const select = (item) => () => selected = item
+const select = (item) => () => {
+  // deselect
+  if (selected === item){
+    selected = null
+  } else {
+    selected = item
+  }
+}
 </script>
 
-<div class="selector carousel rounded-box">
+<div class="selector carousel">
   {#each colors as color }
     <div on:click={select(color)} class="carousel-item">
       <div class="color" style="--color: {color}" class:selected="{selected === color}">
@@ -21,6 +28,7 @@ const select = (item) => () => selected = item
 <style>
 .selector {
   cursor: pointer;
+  /* border: 1px solid #666; */
 }
 .color {
   --color: white;
