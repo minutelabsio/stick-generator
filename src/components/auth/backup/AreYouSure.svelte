@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
+  import { goto } from '$lib/nav.js'
 
   import { filesystemStore, sessionStore } from '../../../stores'
   import { setBackupStatus } from '$lib/auth/backup'

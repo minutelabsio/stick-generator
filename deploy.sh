@@ -11,6 +11,7 @@ pnpm build
 # navigate into the build output directory
 cd build
 
+touch .nojekyll
 # if you are deploying to a custom domain
 # echo 'www.example.com' > CNAME
 

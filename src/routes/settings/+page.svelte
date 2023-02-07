@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
+  import { goto } from '$lib/nav.js'
   import { sessionStore } from '$src/stores'
   import AvatarUpload from '$components/settings/AvatarUpload.svelte'
   import ConnectedDevices from '$components/settings/ConnectedDevices.svelte'

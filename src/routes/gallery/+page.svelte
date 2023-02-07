@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
-  import { goto } from '$app/navigation'
+  import { goto } from '$lib/nav.js'
 
   import { sessionStore } from '$src/stores'
   import { AREAS, galleryStore } from '$routes/gallery/stores'

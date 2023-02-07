@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
+  import { goto } from '$lib/nav.js'
   import { onDestroy, onMount } from 'svelte'
   import QRCode from 'qrcode-svg'
 

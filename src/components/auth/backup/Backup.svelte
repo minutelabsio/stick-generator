@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte'
-  import { goto } from '$app/navigation'
+  import { goto } from '$lib/nav.js'
 
   import { appName } from '$lib/app-info'
   import type { BackupView } from '$lib/views'

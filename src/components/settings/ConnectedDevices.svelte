@@ -1,5 +1,6 @@
 <script lang="ts">
   import { sessionStore } from '$src/stores'
+  import { base } from '$app/paths'
 </script>
 
 <div class="flex flex-col gap-4">
@@ -9,7 +10,7 @@
   {:else}
     <p>You have no other connected devices.</p>
   {/if}
-  <a class="btn btn-outline" href="/delegate-account">
+  <a class="btn btn-outline" href="{base}/delegate-account">
     Connect an additional device
   </a>
 </div>

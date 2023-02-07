@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths'
   import { appName } from '$lib/app-info'
   import { sessionStore } from '../../../stores'
   import WelcomeCheckIcon from '$components/icons/WelcomeCheckIcon.svelte'
@@ -32,7 +33,7 @@
           </p>
         </div>
 
-        <a class="btn btn-primary" href="/backup">Continue</a>
+        <a class="btn btn-primary" href="{base}/backup">Continue</a>
       </div>
     </div>
   </div>

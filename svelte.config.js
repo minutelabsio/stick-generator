@@ -1,5 +1,6 @@
 import preprocess from 'svelte-preprocess'
 import adapter from '@sveltejs/adapter-static'
+import pkg from './package.json' assert { type: "json" }
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -10,6 +11,11 @@ const config = {
     adapter: adapter({
       fallback: 'index.html'
     }),
+    paths: {
+      base: process.env.NODE_ENV === 'production'
+        ? `/${pkg.name}`
+        : '',
+    },
   },
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import '../global.css'
+  import { base } from '$app/paths'
   import { addNotification } from '$lib/notifications'
   import { appDescription, appImageURL, appName, appURL } from '$lib/app-info'
   import { sessionStore, themeStore } from '../stores'
@@ -26,6 +27,11 @@
 </script>
 
 <svelte:head>
+  <!-- See https://evilmartians.com/chronicles/how-to-favicon-in-2021-six-files-that-fit-most-needs for description. -->
+  <link rel="icon" href="{base}/favicon.ico" sizes="any" />
+  <link rel="icon" href="{base}/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" sizes="180x180" href="{base}/apple-touch-icon.png" />
+  <link rel="manifest" href="{base}/manifest.webmanifest" />
   <title>{appName}</title>
 
   <meta name="description" content={appDescription} />

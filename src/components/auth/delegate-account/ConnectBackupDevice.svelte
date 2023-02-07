@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
+  import { base } from '$app/paths'
+  import { goto } from '$lib/nav.js'
   import clipboardCopy from 'clipboard-copy'
 
   import Share from '$components/icons/Share.svelte'
@@ -40,7 +41,7 @@
       {:else}
         <a
           class="btn btn-xs btn-link text-sm font-normal underline mt-4"
-          href="/"
+          href="{base}/"
         >
           Cancel
         </a>

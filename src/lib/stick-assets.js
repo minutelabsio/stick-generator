@@ -1,3 +1,5 @@
+import { base } from '$app/paths'
+
 const fileList = (pfx, count = 1) => {
   return Array.from({ length: count }, (_, i) => {
     const n = (i + 1).toString().padStart(2, '0')
@@ -39,7 +41,7 @@ const facialHairColors = [
   '#E4E4E4',
 ]
 const hatColors = colors
-const basePath = '/stick-assets'
+const basePath = `${base}/stick-assets`
 const bodies = fileList(`${basePath}/Bodies/body`)
 const heads = fileList(`${basePath}/Heads/head`)
 const headMasks = fileList(`${basePath}/Heads/maskhead`)

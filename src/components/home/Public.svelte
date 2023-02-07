@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths'
   import { sessionStore } from '$src/stores'
   import { appName } from '$lib/app-info'
   import Alert from '$components/icons/Alert.svelte'
@@ -31,10 +32,10 @@
       </div>
     {:else}
       <div class="flex flex-col items-start gap-4">
-        <a class="btn btn-primary !btn-lg !h-10 gap-2" href="/register">
+        <a class="btn btn-primary !btn-lg !h-10 gap-2" href="{base}/register">
           <Connect /> Connect this device
         </a>
-        <a class="btn btn-outline" href="/recover">
+        <a class="btn btn-outline" href="{base}/recover">
           Recover an existing account
         </a>
       </div>

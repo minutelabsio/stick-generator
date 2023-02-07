@@ -1,6 +1,6 @@
 <script lang="ts">
   import type * as webnative from 'webnative'
-  import { goto } from '$app/navigation'
+  import { goto } from '$lib/nav.js'
   import { page } from '$app/stores'
 
   import { addNotification } from '$lib/notifications'

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
+  import { goto } from '$lib/nav.js'
 
   import { RECOVERY_STATES } from '$lib/auth/account'
   import RightArrow from '$components/icons/RightArrow.svelte'

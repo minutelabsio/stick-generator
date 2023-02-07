@@ -1,5 +1,6 @@
 <script lang="ts">
   import { sessionStore } from '../../stores'
+  import { base } from '$app/paths'
 </script>
 
 <div
@@ -13,7 +14,7 @@
       Webnative makes it easy to implement private, encrypted, user-owned
       storage in your app. See it in action with our photo gallery demo.
     </p>
-    <a class="btn btn-primary" href="/gallery">Try the Photo Gallery Demo</a>
+    <a class="btn btn-primary" href="{base}/gallery">Try the Photo Gallery Demo</a>
   </div>
 
   <div class="flex flex-col items-start justify-center gap-5">
@@ -24,7 +25,7 @@
       devices as they’d like. For recoverability, we recommend they always
       connect at least two.
     </p>
-    <a class="btn btn-primary" href="/delegate-account">
+    <a class="btn btn-primary" href="{base}/delegate-account">
       Connect an additional device
     </a>
   </div>

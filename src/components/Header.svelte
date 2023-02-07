@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
+  import { base } from '$app/paths'
+  import { goto } from '$lib/nav.js'
   import { page } from '$app/stores'
   import { sessionStore, themeStore } from '../stores'
   import { DEFAULT_THEME_KEY, storeTheme, type ThemeOptions } from '$lib/theme'
@@ -71,7 +72,7 @@
     {/if}
 
     {#if $sessionStore.session}
-      <a href="/settings" class="ml-2 cursor-pointer">
+      <a href="{base}/settings" class="ml-2 cursor-pointer">
         <Avatar size="small" />
       </a>
     {/if}

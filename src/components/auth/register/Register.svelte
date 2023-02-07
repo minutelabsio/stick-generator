@@ -1,6 +1,6 @@
 <script lang="ts">
   import { get as getStore } from 'svelte/store'
-
+  import { base } from '$app/paths'
   import { sessionStore } from '$src/stores'
   import {
     createDID,
@@ -139,7 +139,7 @@
       <div class="flex items-center mt-4">
         <a
           class="!h-[52px] btn btn-outline !text-neutral-900 !border-neutral-900 !bg-neutral-50"
-          href="/"
+          href="{base}/"
         >
           Cancel
         </a>
@@ -184,6 +184,6 @@
     </div>
 
     <!-- Recovery Link -->
-    <a href="/recover" class="underline">Recover an account</a>
+    <a href="{base}/recover" class="underline">Recover an account</a>
   </div>
 {/if}
