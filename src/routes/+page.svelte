@@ -4,8 +4,10 @@
   import StickGen from '$components/stick-generator/StickGen.svelte'
 </script>
 
-{#if $sessionStore?.session}
-  <StickGen />
+<StickGen />
+
+<!-- {#if $sessionStore?.session}
+
 {:else}
   <Public />
-{/if}
+{/if} -->

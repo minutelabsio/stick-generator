@@ -3,6 +3,7 @@ import { onMount } from 'svelte'
 import { createCanvas } from '@wellcaffeinated/view-draw'
 import ImageSelector from './ImageSelector.svelte'
 import ColorSelector from './ColorSelector.svelte'
+import Notification from './Notification.svelte'
 import StickAssets from '$lib/stick-assets.js'
 import CustomImageSelector from './CustomImageSelector.svelte'
 import {
@@ -92,8 +93,36 @@ async function draw(Draw, props){
   drawImage(Draw.ctx, ctx.canvas, 0, 0)
 }
 
+const notification = {
+  type: 'info',
+  message: ''
+}
+
 function downloadStickFigure(){
   downloadCanvasImage(Drawing.canvas, 'stick-figure', true)
+}
+
+async function saveImage(){
+  const dataURI = Drawing.canvas.toDataURL()
+  try {
+    const img = (await fetch(dataURI))
+    const res = await fetch('/api/images/test.png', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "image/png"
+      },
+      body: await img.blob(),
+    })
+    if (!res.ok){
+      const msg = await res.text()
+      throw new Error(msg)
+    }
+    notification.type = 'info'
+    notification.message = 'Saved Image'
+  } catch (e) {
+    notification.type = 'error'
+    notification.message = e.message
+  }
 }
 
 let hat = null
@@ -132,8 +161,6 @@ $: stickFigureCfg = {
   customImageLayerIndex
 }
 $: draw(Drawing, stickFigureCfg)
-
-
 const nLayers = 12
 
 function changeLayer(n){
@@ -160,11 +187,16 @@ onMount(() => {
 })
 </script>
 
+<Notification message={notification.message} type={notification.type}/>
+
 <div class="grid grid-rows-1 grid-flow-col gap-4">
   <div class="display">
     <div bind:this={canvasWrap} class="flex-none canvas-wrap">
     </div>
-    <button class="btn btn-wide" on:click={downloadStickFigure}>Download</button>
+    <div class="">
+      <button class="btn btn-wide btn-secondary" on:click={saveImage}>Save</button>
+      <button class="btn btn-wide btn-secondary" on:click={downloadStickFigure}>Download</button>
+    </div>
   </div>
   <div class="controls flex-none">
     <div class="stick-option">

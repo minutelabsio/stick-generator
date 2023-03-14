@@ -45,7 +45,11 @@
   <meta name="twitter:image:alt" content={appName} />
 </svelte:head>
 
-<div data-theme={$themeStore.selectedTheme} class="min-h-screen">
+<div class="min-h-screen">
+  <slot />
+</div>
+
+<!-- <div data-theme={$themeStore.selectedTheme} class="min-h-screen">
   <Notifications />
 
   {#if $sessionStore.loading}
@@ -58,5 +62,5 @@
       </div>
     </SidebarNav>
   {/if}
-  <!-- <Footer /> -->
-</div>
+  <Footer />
+</div> -->

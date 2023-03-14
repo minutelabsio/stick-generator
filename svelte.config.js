@@ -12,9 +12,9 @@ const config = {
       fallback: 'index.html'
     }),
     paths: {
-      base: process.env.NODE_ENV === 'production'
-        ? `/stick-generator`
-        : '',
+      // base: process.env.NODE_ENV === 'production'
+      //   ? `/stick-generator`
+      //   : '',
     },
   },
 }

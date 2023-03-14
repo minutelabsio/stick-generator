@@ -37,5 +37,6 @@
     }
   },
   "extends": "./.svelte-kit/tsconfig.json",
-  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts", "src/**/*.svelte"]
+  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts", "src/**/*.svelte"],
+  "exclude": ["functions/**/*"]
 }
