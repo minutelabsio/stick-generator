@@ -1,6 +1,6 @@
 # Top-level configuration
 name = "stick-generator"
-compatibility_date = "2023-03-13"
+compatibility_date = "2023-03-07"
 account_id = "847aff3ed9c07c12eae4f4747ae61e8b"
 
 workers_dev = false
@@ -9,6 +9,9 @@ routes = [
 ]
 
 r2_buckets  = [
-  { binding = "STICK_FIGURES", bucket_name = "stick-figures", preview_bucket_name = "stick-figures-dev" }
+  { binding = "STICK_FIGURES", bucket_name = "stick-figures-dev", preview_bucket_name = "stick-figures-dev" }
 ]
 
+kv_namespaces = [
+  { binding = "STICK_FIGURE_DATA", id = "STICK_FIGURE_DATA", preview_id="STICK_FIGURE_DATA" }
+]

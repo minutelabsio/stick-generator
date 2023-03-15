@@ -1,7 +1,3 @@
-interface Env {
-  STICK_FIGURES: R2Bucket
-}
-
 const MB = 1024 * 1024
 const MAX_UPLOAD_SIZE = 2 * MB
 
@@ -48,7 +44,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
   try {
     const filename = params.image
     const bucket = env.STICK_FIGURES
-    await bucket.put(`images/${filename}`, iteratorToStream(limitBodySize(request.body)))
+    await bucket.put(`images/${filename}`, request.body)
     return new Response('OK')
   } catch (e) {
     return new Response(e.message, { status: 500 })

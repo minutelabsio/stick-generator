@@ -45,8 +45,8 @@
   <meta name="twitter:image:alt" content={appName} />
 </svelte:head>
 
-<div class="min-h-screen">
-  <slot />
+<div data-theme={$themeStore.selectedTheme} class="min-h-screen">
+  <slot/>
 </div>
 
 <!-- <div data-theme={$themeStore.selectedTheme} class="min-h-screen">

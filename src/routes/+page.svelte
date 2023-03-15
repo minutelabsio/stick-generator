@@ -1,10 +1,10 @@
 <script lang="ts">
   import { sessionStore } from '$src/stores'
   import Public from '$components/home/Public.svelte'
-  import StickGen from '$components/stick-generator/StickGen.svelte'
+  import Editor from '$components/stick-generator/Editor.svelte'
 </script>
 
-<StickGen />
+<Editor/>
 
 <!-- {#if $sessionStore?.session}
 

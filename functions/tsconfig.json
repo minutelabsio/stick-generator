@@ -1,8 +1,9 @@
 {
-  "include": ["./**/*"],
+  "include": ["./**/*.d.ts", "./**/*.ts"],
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
+    "moduleResolution": "node",
     "lib": [
       "esnext"
     ],

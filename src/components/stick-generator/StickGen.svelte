@@ -5,7 +5,7 @@ import ImageSelector from './ImageSelector.svelte'
 import ColorSelector from './ColorSelector.svelte'
 import Notification from './Notification.svelte'
 import StickAssets from '$lib/stick-assets.js'
-import CustomImageSelector from './CustomImageSelector.svelte'
+// import CustomImageSelector from './CustomImageSelector.svelte'
 import {
   downloadCanvasImage,
   loadImage,
@@ -18,6 +18,9 @@ import {
 
 let canvasWrap
 let Drawing
+
+export let dataEntry
+export let onSaved
 
 function randomSelection(choices){
   const i = Math.floor(Math.random() * choices.length)
@@ -99,30 +102,8 @@ const notification = {
 }
 
 function downloadStickFigure(){
-  downloadCanvasImage(Drawing.canvas, 'stick-figure', true)
-}
-
-async function saveImage(){
-  const dataURI = Drawing.canvas.toDataURL()
-  try {
-    const img = (await fetch(dataURI))
-    const res = await fetch('/api/images/test.png', {
-      method: 'POST',
-      headers: {
-        "Content-Type": "image/png"
-      },
-      body: await img.blob(),
-    })
-    if (!res.ok){
-      const msg = await res.text()
-      throw new Error(msg)
-    }
-    notification.type = 'info'
-    notification.message = 'Saved Image'
-  } catch (e) {
-    notification.type = 'error'
-    notification.message = e.message
-  }
+  const email = dataEntry['Email Address'] || 'unknown'
+  downloadCanvasImage(Drawing.canvas, `stick-figure-for-${email}`, true)
 }
 
 let hat = null
@@ -136,6 +117,20 @@ let glasses = null
 let accessory = null
 let customImage = null
 let customImageLayerIndex = 0
+
+$: if (dataEntry?.stickProps){
+  hat = dataEntry.stickProps || null
+  hatColor = dataEntry.hatColor || null
+  hairStyle = dataEntry.hairStyle || null
+  hairColor = dataEntry.hairColor || null
+  skinColor = dataEntry.skinColor || null
+  facialHairStyle = dataEntry.facialHairStyle || null
+  facialHairColor = dataEntry.facialHairColor || null
+  glasses = dataEntry.glasses || null
+  accessory = dataEntry.accessory || null
+  customImage = dataEntry.customImage || null
+  customImageLayerIndex = dataEntry.customImageLayerIndex || 0
+}
 
 $: if (hat && !hatColor){
   hatColor = StickAssets.hatColors[0]
@@ -165,6 +160,34 @@ const nLayers = 12
 
 function changeLayer(n){
   customImageLayerIndex = Math.min(nLayers, Math.max(0, n + customImageLayerIndex))
+}
+
+async function saveImage(){
+  const dataURI = Drawing.canvas.toDataURL()
+  try {
+    const email = dataEntry['Email Address']
+    if (!email){
+      throw new Error('Could not read email address for this entry')
+    }
+    const img = (await fetch(dataURI))
+    const res = await fetch(`/api/images/${email}.png`, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "image/png"
+      },
+      body: await img.blob(),
+    })
+    if (!res.ok){
+      const msg = await res.text()
+      throw new Error(msg)
+    }
+    notification.type = 'info'
+    notification.message = 'Saved Image'
+    onSaved(stickFigureCfg)
+  } catch (e) {
+    notification.type = 'error'
+    notification.message = e.message
+  }
 }
 
 onMount(() => {
@@ -233,7 +256,7 @@ onMount(() => {
         <button class="btn">Layer {nLayers - customImageLayerIndex}</button>
         <button class="btn" on:click={() => changeLayer(-1)}>»</button>
       </div>
-      <CustomImageSelector bind:selected={customImage}/>
+      <!-- <CustomImageSelector bind:selected={customImage}/> -->
     </div>
   </div>
 </div>

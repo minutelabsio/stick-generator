@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "vite dev",
+    "dev": "wrangler pages dev -- vite dev",
     "build": "vite build",
     "cf": "wrangler pages dev build",
     "preview": "vite preview",
@@ -14,10 +14,11 @@
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint './src/**/*.{js,ts,svelte}'",
     "format": "prettier --write --plugin-search-dir=. .",
-    "deploy": "sh deploy.sh"
+    "deploy": "vite build && wrangler pages publish build"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230307.0",
+    "@miniflare/tre": "3.0.0-next.12",
     "@playwright/test": "^1.29.2",
     "@sveltejs/adapter-cloudflare": "^2.2.0",
     "@sveltejs/adapter-static": "^1.0.0",
@@ -45,7 +46,8 @@
     "tsconfig-paths": "^3.12.0",
     "tslib": "^2.0.0",
     "typescript": "^4.4.4",
-    "vite": "^4.0.0"
+    "vite": "^4.0.0",
+    "wrangler": "^2.12.3"
   },
   "type": "module",
   "ava": {
@@ -63,6 +65,7 @@
   "dependencies": {
     "@wellcaffeinated/view-draw": "^0.0.4",
     "clipboard-copy": "^4.0.1",
+    "csv-parse": "^5.3.6",
     "qrcode-svg": "^1.1.0",
     "uint8arrays": "^4.0.2",
     "webnative": "^0.36.0"
