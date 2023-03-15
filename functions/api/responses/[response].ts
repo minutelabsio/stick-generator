@@ -1,6 +1,7 @@
 import {
   parse as parseCsv
 } from 'csv-parse/browser/esm/sync'
+import { v4 as uuidv4 } from 'uuid'
 
 function csvToJson(text : string){
   const rows = parseCsv(text, { columns: true })
@@ -12,7 +13,11 @@ async function getResponsesFromR2(bucket, response){
   if (!obj){
     return null
   }
-  return csvToJson(await obj.text())
+  const rows = csvToJson(await obj.text())
+  for (const row of rows){
+    row.id = uuidv4()
+  }
+  return rows
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
@@ -38,7 +43,7 @@ function applyUpdates(original, updates : Array<any>){
   const todo = updates.slice(0)
   return original.map(entry => {
     if (!todo.length){ return entry }
-    const idx = todo.findIndex(o => o['Email Address'] === entry['Email Address'])
+    const idx = todo.findIndex(o => o.id === entry.id)
     if (idx < 0){ return entry }
     const update = todo[idx]
     todo.splice(idx, 1)

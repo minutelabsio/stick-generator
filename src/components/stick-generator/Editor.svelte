@@ -8,6 +8,10 @@
   let items = []
 
   onMount(async () => {
+    if (process.env.NODE_ENV === 'development'){
+      responses = ['__DEV__']
+      return
+    }
     const res = await fetch('/api/responses')
     if (!res.ok){
       console.log('No responses fetched from server')
@@ -17,15 +21,42 @@
   })
 
   const select = (item) => () => {
-    // deselect
-    if (selected === item){
-      selected = null
-    } else {
-      selected = item
-    }
+    selected = item
   }
 
   const fetchDataset = async () => {
+    if (response === '__DEV__'){
+      items = [
+        {
+          "Timestamp": "3/14/2023 11:38:10",
+          "Email Address": "well.caffeinated@gmail.com",
+          "Favorite thing": "Option 2",
+          "Likeness of you": "https://drive.google.com/open?id=1CVb4vbdHWoXNToMBsj1y7DwAjUfu-5Lb",
+          "Filename": "download20210605003031 - Jasper Palfree.png",
+          "stickProps": {
+            "hat": "/stick-assets/Hats/hat-01.png",
+            "hatColor": "green",
+            "hairStyle": null,
+            "hairColor": null,
+            "skinColor": null,
+            "facialHairStyle": null,
+            "facialHairColor": null,
+            "glasses": null,
+            "accessory": null,
+            "customImage": null,
+            "customImageLayerIndex": 0
+          }
+        },
+        {
+          "Timestamp": "3/14/2023 11:40:58",
+          "Email Address": "well.caffeinated@gmail.com",
+          "Favorite thing": "Option 3",
+          "Likeness of you": "https://drive.google.com/open?id=1B28M9cZzCNYrB-vddq-qYd7dXowkMtji",
+          "Filename": "Red-Wolf - Jasper Palfree.png"
+        }
+      ]
+      return
+    }
     const res = await fetch(`/api/responses/${response}`)
     if (!res.ok){
       console.log(`No entries fetched from for dataset ${response}`)
@@ -36,19 +67,22 @@
 
   const onSaved = async (stickProps) => {
     if (!response){ return }
+    const data = selected
+    selected.stickProps = stickProps
     const res = await fetch(`/api/responses/${response}`, {
       method: 'POST',
       headers: {
         "Content-Type": "text/json"
       },
       body: JSON.stringify([
-        { ...selected, stickProps }
+        data
       ])
     })
     if (!res.ok){
       const msg = await res.text()
       throw new Error(msg)
     }
+    selected = data
   }
 
 </script>

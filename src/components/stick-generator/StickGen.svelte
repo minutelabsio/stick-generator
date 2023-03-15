@@ -102,8 +102,8 @@ const notification = {
 }
 
 function downloadStickFigure(){
-  const email = dataEntry['Email Address'] || 'unknown'
-  downloadCanvasImage(Drawing.canvas, `stick-figure-for-${email}`, true)
+  const id = dataEntry.id || 'unknown'
+  downloadCanvasImage(Drawing.canvas, `stick-figure-${id}`, true)
 }
 
 let hat = null
@@ -118,18 +118,18 @@ let accessory = null
 let customImage = null
 let customImageLayerIndex = 0
 
-$: if (dataEntry?.stickProps){
-  hat = dataEntry.stickProps || null
-  hatColor = dataEntry.hatColor || null
-  hairStyle = dataEntry.hairStyle || null
-  hairColor = dataEntry.hairColor || null
-  skinColor = dataEntry.skinColor || null
-  facialHairStyle = dataEntry.facialHairStyle || null
-  facialHairColor = dataEntry.facialHairColor || null
-  glasses = dataEntry.glasses || null
-  accessory = dataEntry.accessory || null
-  customImage = dataEntry.customImage || null
-  customImageLayerIndex = dataEntry.customImageLayerIndex || 0
+const reset = () => {
+  hat = null
+  hatColor = null
+  hairStyle = null
+  hairColor = null
+  skinColor = null
+  facialHairStyle = null
+  facialHairColor = null
+  glasses = null
+  accessory = null
+  customImage = null
+  customImageLayerIndex = 0
 }
 
 $: if (hat && !hatColor){
@@ -142,7 +142,24 @@ $: if (facialHairStyle && !facialHairColor){
   facialHairColor = StickAssets.facialHairColors[0]
 }
 
-$: stickFigureCfg = {
+const withDefaults = (obj) => {
+  if (!dataEntry.stickProps){ return obj }
+  for (const key of Object.keys(obj)){
+    obj[key] = obj[key] === null ? dataEntry?.stickProps[key] : obj[key]
+  }
+  return obj
+}
+
+let oldEntry
+const checkReset = (dataEntry) => {
+  if (dataEntry !== oldEntry) {
+    oldEntry = dataEntry
+    reset()
+  }
+  return true
+}
+
+$: stickFigureCfg = checkReset(dataEntry) && withDefaults({
   hat,
   hatColor,
   hairStyle,
@@ -154,7 +171,7 @@ $: stickFigureCfg = {
   accessory,
   customImage,
   customImageLayerIndex
-}
+})
 $: draw(Drawing, stickFigureCfg)
 const nLayers = 12
 
@@ -165,12 +182,12 @@ function changeLayer(n){
 async function saveImage(){
   const dataURI = Drawing.canvas.toDataURL()
   try {
-    const email = dataEntry['Email Address']
-    if (!email){
-      throw new Error('Could not read email address for this entry')
+    const id = dataEntry.id
+    if (!id){
+      throw new Error('Could not read id address for this entry')
     }
     const img = (await fetch(dataURI))
-    const res = await fetch(`/api/images/${email}.png`, {
+    const res = await fetch(`/api/images/${id}.png`, {
       method: 'POST',
       headers: {
         "Content-Type": "image/png"
@@ -183,7 +200,7 @@ async function saveImage(){
     }
     notification.type = 'info'
     notification.message = 'Saved Image'
-    onSaved(stickFigureCfg)
+    await onSaved(stickFigureCfg)
   } catch (e) {
     notification.type = 'error'
     notification.message = e.message
