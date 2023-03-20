@@ -46,6 +46,7 @@
 </svelte:head>
 
 <div data-theme={$themeStore.selectedTheme} class="min-h-screen">
+  <Notifications />
   <slot/>
 </div>
 

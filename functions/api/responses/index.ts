@@ -1,5 +1,9 @@
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
+  if (env.mock) {
+    return new Response(JSON.stringify(['__DEV__']))
+  }
+
   try {
     const bucket = env.STICK_FIGURES
     const responses = await bucket.list({ prefix: 'responses/' })

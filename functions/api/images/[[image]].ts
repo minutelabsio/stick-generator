@@ -1,6 +1,13 @@
 const MB = 1024 * 1024
 const MAX_UPLOAD_SIZE = 2 * MB
 
+const parsePath = (parts: string | string[]) => {
+  const path = typeof parts === 'string' ?
+    parts :
+    parts.join('/')
+  return decodeURIComponent(path)
+}
+
 function iteratorToStream(iterator) {
   return new ReadableStream({
     async pull(controller) {
@@ -28,7 +35,10 @@ async function* limitBodySize(body: ReadableStream, limit = 2 * MAX_UPLOAD_SIZE)
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
   try {
-    const filename = params.image
+    if (!params.image) {
+      return new Response('Not found', { status: 404 })
+    }
+    const filename = parsePath(params.image)
     const bucket = env.STICK_FIGURES
     const obj = await bucket.get(`images/${filename}`)
     if (obj === null) {
@@ -42,7 +52,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }) => {
   try {
-    const filename = params.image
+    if (!params.image){
+      throw new Error('No image path specified')
+    }
+    const filename = parsePath(params.image)
     const bucket = env.STICK_FIGURES
     await bucket.put(`images/${filename}`, request.body)
     return new Response('OK')

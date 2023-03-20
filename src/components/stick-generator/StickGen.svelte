@@ -3,7 +3,7 @@ import { onMount } from 'svelte'
 import { createCanvas } from '@wellcaffeinated/view-draw'
 import ImageSelector from './ImageSelector.svelte'
 import ColorSelector from './ColorSelector.svelte'
-import Notification from './Notification.svelte'
+import { addNotification } from '$lib/notifications.js'
 import StickAssets from '$lib/stick-assets.js'
 // import CustomImageSelector from './CustomImageSelector.svelte'
 import {
@@ -19,6 +19,7 @@ import {
 let canvasWrap
 let Drawing
 
+export let prefix
 export let dataEntry
 export let onSaved
 
@@ -94,11 +95,6 @@ async function draw(Draw, props){
   layers.forEach((layer) => drawImage(ctx, layer, 0, 0))
   clearCanvas(Draw.ctx)
   drawImage(Draw.ctx, ctx.canvas, 0, 0)
-}
-
-const notification = {
-  type: 'info',
-  message: ''
 }
 
 function downloadStickFigure(){
@@ -187,7 +183,7 @@ async function saveImage(){
       throw new Error('Could not read id address for this entry')
     }
     const img = (await fetch(dataURI))
-    const res = await fetch(`/api/images/${id}.png`, {
+    const res = await fetch(`/api/images/${prefix}/${id}.png`, {
       method: 'POST',
       headers: {
         "Content-Type": "image/png"
@@ -198,12 +194,10 @@ async function saveImage(){
       const msg = await res.text()
       throw new Error(msg)
     }
-    notification.type = 'info'
-    notification.message = 'Saved Image'
     await onSaved(stickFigureCfg)
+    addNotification('Saved Image', 'success')
   } catch (e) {
-    notification.type = 'error'
-    notification.message = e.message
+    addNotification(e.message, 'error')
   }
 }
 
@@ -226,8 +220,6 @@ onMount(() => {
   draw(Drawing, stickFigureCfg)
 })
 </script>
-
-<Notification message={notification.message} type={notification.type}/>
 
 <div class="grid grid-rows-1 grid-flow-col gap-4">
   <div class="display">
