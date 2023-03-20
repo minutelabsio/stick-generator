@@ -1,3 +1,5 @@
+import { setCache } from '../cache'
+
 const parsePath = (parts: string | string[]) => {
   const path = typeof parts === 'string' ?
     parts :
@@ -12,10 +14,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     const path = parsePath(r2path)
     const obj = await bucket.get(`likeness/${path}`)
     if (obj === null) {
-      return new Response('Not found', { status: 404 })
+      return setCache(new Response('Not found', { status: 404 }))
     }
-    return new Response(obj.body)
+    return setCache(new Response(obj.body))
   } catch (e) {
-    return new Response(e.message, { status: 500 })
+    return setCache(new Response(e.message, { status: 500 }))
   }
 }

@@ -2,6 +2,7 @@ import {
   parse as parseCsv
 } from 'csv-parse/browser/esm/sync'
 import { v4 as uuidv4 } from 'uuid'
+import { setCache } from '../cache'
 
 const MOCK_ITEMS = [
   {
@@ -52,7 +53,7 @@ async function getResponsesFromR2(bucket, response){
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
   if (env.mock) {
-    return new Response(JSON.stringify(MOCK_ITEMS))
+    return setCache(new Response(JSON.stringify(MOCK_ITEMS)))
   }
   try {
     const { response } = params
@@ -60,15 +61,17 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     const kv = env.STICK_FIGURE_DATA
     const data = await kv.get(`${response}`, 'text')
     if (data){
-      return new Response(data)
+      return setCache(new Response(data))
     }
     const rows = await getResponsesFromR2(bucket, response)
-    if (rows === null) {
-      return new Response('Not found', { status: 404 })
+    if (!rows) {
+      return setCache(new Response('Not found', { status: 404 }))
     }
-    return new Response(JSON.stringify(rows), { headers: { 'Content-Type': 'text/json' }})
+    const text = JSON.stringify(rows)
+    await kv.put(`${response}`, text)
+    return setCache(new Response(text, { headers: { 'Content-Type': 'text/json' }}))
   } catch (e) {
-    return new Response(e.message, { status: 500 })
+    return setCache(new Response(e.message, { status: 500 }))
   }
 }
 
@@ -88,27 +91,24 @@ function applyUpdates(original, updates : Array<any>){
 export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }) => {
   try {
     const { response } = params
-    const bucket = env.STICK_FIGURES
     const kv = env.STICK_FIGURE_DATA
-    let data = await kv.get(`${response}`, 'json')
+    const data = await kv.get(`${response}`, 'json')
     if (data === null) {
-      data = await getResponsesFromR2(bucket, response)
-      if (!data) {
-        return new Response('Not found', { status: 404 })
-      }
-      await kv.put(`${response}`, JSON.stringify(data))
+      return setCache(new Response('Not found', { status: 404 }))
     }
 
     const updates = await request.json()
     if (!Array.isArray(updates)){
-      return new Response('Bad Data from client', { status: 400 })
+      return setCache(new Response('Bad Data from client', { status: 400 }))
     }
 
     const updatedData = applyUpdates(data, updates)
-    await kv.put(`${response}`, JSON.stringify(updatedData))
 
-    return new Response(JSON.stringify(updatedData), { headers: { 'Content-Type': 'text/json' } })
+    const text = JSON.stringify(updatedData)
+    await kv.put(`${response}`, text)
+
+    return setCache(new Response(text, { headers: { 'Content-Type': 'text/json' } }))
   } catch (e) {
-    return new Response(e.message, { status: 500 })
+    return setCache(new Response(e.message, { status: 500 }))
   }
 }

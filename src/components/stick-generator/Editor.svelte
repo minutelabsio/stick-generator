@@ -47,6 +47,7 @@
       throw new Error(msg)
     }
     selected = data
+    items = items.concat([])
   }
 
 </script>
