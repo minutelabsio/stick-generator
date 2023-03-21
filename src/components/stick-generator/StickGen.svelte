@@ -36,10 +36,12 @@ async function draw(Draw, props){
   console.log(props)
   const { ctx } = Draw.offcanvas
   const { width, height } = ctx.canvas
+  const [hairStyleFront, hairStyleBack] = Array.isArray(props.hairStyle) ? props.hairStyle : [props.hairStyle]
   const [
     body,
     head,
-    hair,
+    hairFront,
+    hairBack,
     facialHairMask,
     glasses,
     accessory,
@@ -48,7 +50,8 @@ async function draw(Draw, props){
   ] = await Promise.all([
     loadImage(props.body),
     loadImage(Assets.heads[0]),
-    loadImage(props.hairStyle),
+    loadImage(hairStyleFront),
+    loadImage(hairStyleBack),
     loadImage(props.facialHairStyle),
     loadImage(props.glasses),
     loadImage(props.accessory),
@@ -58,19 +61,24 @@ async function draw(Draw, props){
 
   const [
     headMask,
-    hairMask,
+    hairFrontMask,
+    hairBackMask,
     hatMask
   ] = await Promise.all([
     loadImage(getMaskFile(Assets.heads[0])),
-    loadImage(getMaskFile(props.hairStyle)),
+    loadImage(getMaskFile(hairStyleFront)),
+    loadImage(getMaskFile(hairStyleBack)),
     loadImage(getMaskFile(props.hat)),
   ])
 
   const { canvas: skinColor}  = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, headMask, props.skinColor)
   })
-  const { canvas: hairColor}  = offscreenCanvas(width, height, (ctx) => {
-    drawColorMask(ctx, hairMask, props.hairColor)
+  const { canvas: hairFrontColor}  = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, hairFrontMask, props.hairColor)
+  })
+  const { canvas: hairBackColor}  = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, hairBackMask, props.hairColor)
   })
   const { canvas: facialHair } = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, facialHairMask, props.facialHairColor)
@@ -82,12 +90,14 @@ async function draw(Draw, props){
   clearCanvas(ctx)
 
   let layers = [
+    hairBackColor,
+    hairBack,
     body,
     skinColor,
     facialHair,
     head,
-    hairColor,
-    hair,
+    hairFrontColor,
+    hairFront,
     glasses,
     accessory,
     hatColor,
@@ -125,7 +135,7 @@ const reset = () => {
   hatColor = undefined
   hairStyle = undefined
   hairColor = undefined
-  skinColor = undefined
+  skinColor = randomSelection(Assets.skinColor)
   facialHairStyle = undefined
   facialHairColor = undefined
   glasses = undefined
@@ -151,6 +161,9 @@ const withDefaults = (obj) => {
   }
   if (!obj.body){
     obj.body = randomSelection(Assets.bodies)
+  }
+  if (!obj.skinColor){
+    obj.skinColor = randomSelection(Assets.skinColor)
   }
   return obj
 }

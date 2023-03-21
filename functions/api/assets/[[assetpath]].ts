@@ -10,7 +10,9 @@ const fileList = (pfx, count = 1) => {
 const mockList = {
   Bodies: fileList('body'),
   Heads: fileList('head').concat(fileList('maskhead')),
-  Hairs: fileList('hair'),
+  Hairs: fileList('hair', 2).concat([
+    'hair-02b.png'
+  ]),
   'Facial Hairs': fileList('facialhair'),
   Glasses: fileList('glasses', 2),
   Accessories: fileList('accessory', 3),

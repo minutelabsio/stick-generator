@@ -1,5 +1,5 @@
 <script>
-import { croppedImage, loadImage } from '$lib/canvas.js'
+import { croppedImage, drawImage, loadImage, offscreenCanvas } from '$lib/canvas.js'
 export let cropped = false
 export let images = []
 export let selected
@@ -16,17 +16,29 @@ const select = (item) => () => {
 
 let imageList = []
 
+async function getComposite(images){
+  if (!Array.isArray(images)) { return images }
+  const layers = await Promise.all(images.map(src => loadImage(src)))
+  const ctx = offscreenCanvas(layers[0].width, layers[0].height, (ctx) => {
+    layers.forEach(img => drawImage(ctx, img, 0, 0))
+  })
+  return ctx.canvas.toDataURL()
+}
+
 async function updateImages(images, cropped){
   if (!Array.isArray(images)){ return }
   if (!cropped){
-    imageList = images.map(src => ({ src, value: src }))
+    imageList = await Promise.all(images.map(async assets =>
+      ({ src: await getComposite(assets), value: assets }))
+    )
     return
   }
-  imageList = await Promise.all(images.map(async (src) => {
+  imageList = await Promise.all(images.map(async (assets) => {
+    const src = await getComposite(assets)
     const img = await loadImage(src)
     return {
       src: croppedImage(img, padding),
-      value: src
+      value: assets
     }
   }))
 }

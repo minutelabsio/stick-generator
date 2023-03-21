@@ -116,6 +116,34 @@ const assets = {
   hatColors
 }
 
+const getHairId = path => {
+  return path.match(/([^/.b]+)b?\.(png|jpe?g)$/)[1]
+}
+
+const isHairBack = path => {
+  return /b\.(png|jpe?g)$/.test(path)
+}
+
+function hairFrontBack(list){
+  const byId = {}
+  for (const file of list){
+    const id = getHairId(file)
+    console.log(id)
+    byId[id] = byId[id] || []
+    if (isHairBack(file)){
+      byId[id].push(file)
+    } else {
+      byId[id].unshift(file)
+    }
+  }
+  return Object.values(byId).map(entry => {
+    if (entry.length === 1){
+      return entry[0]
+    }
+    return entry
+  })
+}
+
 export default {
   async load(){
     const assets = {}
@@ -144,7 +172,7 @@ export default {
     assets.bodies = bodies
     assets.heads = heads
     assets.headMasks = headMasks
-    assets.hairStyles = hairStyles
+    assets.hairStyles = hairFrontBack(hairStyles)
     assets.hairColors = hairColors
     assets.skinColors = skinColors
     assets.facialHairStyles = facialHairStyles
