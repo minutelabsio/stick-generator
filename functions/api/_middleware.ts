@@ -1,4 +1,4 @@
 export async function onRequest({ env, next }) {
-  env.mock = true
+  env.mock = false
   return await next()
 }
