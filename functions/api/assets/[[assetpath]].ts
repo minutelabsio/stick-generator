@@ -35,7 +35,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
         return setCache(new Response(JSON.stringify(mockList[category])))
       }
       // list
-      const prefix = `assets/${category}`
+      const prefix = `assets/${category}/`
       const responses = await bucket.list({ prefix })
       if (!responses.objects.length) {
         return setCache(new Response('Not found', { status: 404 }))

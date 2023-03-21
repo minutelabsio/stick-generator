@@ -7,14 +7,18 @@ export function downloadCanvasImage(canvas, filename = 'stick-figure', timestamp
   link.click()
 }
 
+const imageCache = new Map()
 export function loadImage(src){
   if (!src){ return null }
-  return new Promise((resolve, reject) => {
+  if (imageCache.has(src)){ return imageCache.get(src) }
+  const p = new Promise((resolve, reject) => {
     const img = new Image()
     img.src = src
     img.onload = () => resolve(img)
     img.onerror = reject
   })
+  imageCache.set(src, p)
+  return p
 }
 
 export function drawImage(ctx, img, x, y){

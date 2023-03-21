@@ -19,18 +19,21 @@ import {
 let canvasWrap
 let Drawing
 let Assets : any = {}
+let ready = false
 
 export let prefix
 export let dataEntry
 export let onSaved
 
 function randomSelection(choices){
+  if (!choices){ return undefined }
   const i = Math.floor(Math.random() * choices.length)
   return choices[i]
 }
 
 async function draw(Draw, props){
-  if (!Draw){ return }
+  if (!Draw || !props){ return }
+  console.log(props)
   const { ctx } = Draw.offcanvas
   const { width, height } = ctx.canvas
   const [
@@ -43,7 +46,7 @@ async function draw(Draw, props){
     hat,
     custom
   ] = await Promise.all([
-    loadImage(Assets.bodies[0]),
+    loadImage(props.body),
     loadImage(Assets.heads[0]),
     loadImage(props.hairStyle),
     loadImage(props.facialHairStyle),
@@ -103,29 +106,31 @@ function downloadStickFigure(){
   downloadCanvasImage(Drawing.canvas, `stick-figure-${id}`, true)
 }
 
-let hat = null
-let hatColor = null
-let hairStyle = null
-let hairColor = null
-let skinColor = null
-let facialHairStyle = null
-let facialHairColor = null
-let glasses = null
-let accessory = null
-let customImage = null
+let body
+let hat
+let hatColor
+let hairStyle
+let hairColor
+let skinColor
+let facialHairStyle
+let facialHairColor
+let glasses
+let accessory
+let customImage
 let customImageLayerIndex = 0
 
 const reset = () => {
-  hat = null
-  hatColor = null
-  hairStyle = null
-  hairColor = null
-  skinColor = null
-  facialHairStyle = null
-  facialHairColor = null
-  glasses = null
-  accessory = null
-  customImage = null
+  body = randomSelection(Assets.bodies)
+  hat = undefined
+  hatColor = undefined
+  hairStyle = undefined
+  hairColor = undefined
+  skinColor = undefined
+  facialHairStyle = undefined
+  facialHairColor = undefined
+  glasses = undefined
+  accessory = undefined
+  customImage = undefined
   customImageLayerIndex = 0
 }
 
@@ -142,7 +147,10 @@ $: if (facialHairStyle && !facialHairColor){
 const withDefaults = (obj) => {
   if (!dataEntry.stickProps){ return obj }
   for (const key of Object.keys(obj)){
-    obj[key] = obj[key] === null ? dataEntry?.stickProps[key] : obj[key]
+    obj[key] = obj[key] === undefined ? dataEntry?.stickProps[key] : obj[key]
+  }
+  if (!obj.body){
+    obj.body = randomSelection(Assets.bodies)
   }
   return obj
 }
@@ -156,7 +164,8 @@ const checkReset = (dataEntry) => {
   return true
 }
 
-$: stickFigureCfg = checkReset(dataEntry) && withDefaults({
+$: stickFigureCfg = ready && checkReset(dataEntry) && withDefaults({
+  body,
   hat,
   hatColor,
   hairStyle,
@@ -204,6 +213,7 @@ async function saveImage(){
 
 onMount(async () => {
   Assets = await StickAssets.load()
+  ready = true
   const cfg = {
     el: canvasWrap,
     width: 710,
@@ -232,7 +242,12 @@ onMount(async () => {
       <button class="btn btn-wide btn-secondary" on:click={downloadStickFigure}>Download</button>
     </div>
   </div>
+  {#if ready}
   <div class="controls flex-none">
+    <div class="stick-option">
+      <h3>Bodies</h3>
+      <ImageSelector cropped bind:selected={body} images={Assets.bodies}/>
+    </div>
     <div class="stick-option">
       <h3>Hair Style</h3>
       <ImageSelector cropped bind:selected={hairStyle} images={Assets.hairStyles}/>
@@ -270,6 +285,7 @@ onMount(async () => {
       <!-- <CustomImageSelector bind:selected={customImage}/> -->
     </div>
   </div>
+  {/if}
 </div>
 
 <style>
