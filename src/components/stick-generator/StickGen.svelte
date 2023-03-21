@@ -18,6 +18,7 @@ import {
 
 let canvasWrap
 let Drawing
+let Assets : any = {}
 
 export let prefix
 export let dataEntry
@@ -42,8 +43,8 @@ async function draw(Draw, props){
     hat,
     custom
   ] = await Promise.all([
-    loadImage(StickAssets.bodies[0]),
-    loadImage(StickAssets.heads[0]),
+    loadImage(Assets.bodies[0]),
+    loadImage(Assets.heads[0]),
     loadImage(props.hairStyle),
     loadImage(props.facialHairStyle),
     loadImage(props.glasses),
@@ -57,7 +58,7 @@ async function draw(Draw, props){
     hairMask,
     hatMask
   ] = await Promise.all([
-    loadImage(getMaskFile(StickAssets.heads[0])),
+    loadImage(getMaskFile(Assets.heads[0])),
     loadImage(getMaskFile(props.hairStyle)),
     loadImage(getMaskFile(props.hat)),
   ])
@@ -129,13 +130,13 @@ const reset = () => {
 }
 
 $: if (hat && !hatColor){
-  hatColor = StickAssets.hatColors[0]
+  hatColor = Assets?.hatColors[0]
 }
 $: if (hairStyle && !hairColor){
-  hairColor = StickAssets.hairColors[0]
+  hairColor = Assets?.hairColors[0]
 }
 $: if (facialHairStyle && !facialHairColor){
-  facialHairColor = StickAssets.facialHairColors[0]
+  facialHairColor = Assets?.facialHairColors[0]
 }
 
 const withDefaults = (obj) => {
@@ -201,7 +202,8 @@ async function saveImage(){
   }
 }
 
-onMount(() => {
+onMount(async () => {
+  Assets = await StickAssets.load()
   const cfg = {
     el: canvasWrap,
     width: 710,
@@ -233,30 +235,30 @@ onMount(() => {
   <div class="controls flex-none">
     <div class="stick-option">
       <h3>Hair Style</h3>
-      <ImageSelector cropped bind:selected={hairStyle} images={StickAssets.hairStyles}/>
-      <ColorSelector bind:selected={hairColor} colors={StickAssets.hairColors}/>
+      <ImageSelector cropped bind:selected={hairStyle} images={Assets.hairStyles}/>
+      <ColorSelector bind:selected={hairColor} colors={Assets.hairColors}/>
     </div>
     <div class="stick-option">
       <h3>Hat</h3>
-      <ImageSelector cropped bind:selected={hat} images={StickAssets.hats}/>
-      <ColorSelector bind:selected={hatColor} colors={StickAssets.hatColors}/>
+      <ImageSelector cropped bind:selected={hat} images={Assets.hats}/>
+      <ColorSelector bind:selected={hatColor} colors={Assets.hatColors}/>
     </div>
     <div class="stick-option">
       <h3>Skin Color</h3>
-      <ColorSelector bind:selected={skinColor} colors={StickAssets.skinColors}/>
+      <ColorSelector bind:selected={skinColor} colors={Assets.skinColors}/>
     </div>
     <div class="stick-option">
       <h3>Facial Hair</h3>
-      <ImageSelector cropped bind:selected={facialHairStyle} images={StickAssets.facialHairStyles}/>
-      <ColorSelector bind:selected={facialHairColor} colors={StickAssets.facialHairColors}/>
+      <ImageSelector cropped bind:selected={facialHairStyle} images={Assets.facialHairStyles}/>
+      <ColorSelector bind:selected={facialHairColor} colors={Assets.facialHairColors}/>
     </div>
     <div class="stick-option">
       <h3>Glasses</h3>
-      <ImageSelector cropped bind:selected={glasses} images={StickAssets.glasses}/>
+      <ImageSelector cropped bind:selected={glasses} images={Assets.glasses}/>
     </div>
     <div class="stick-option">
       <h3>Accessory</h3>
-      <ImageSelector cropped bind:selected={accessory} images={StickAssets.accessories}/>
+      <ImageSelector cropped bind:selected={accessory} images={Assets.accessories}/>
     </div>
     <div class="stick-option">
       <h3>Custom Images</h3>

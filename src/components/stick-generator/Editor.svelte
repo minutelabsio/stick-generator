@@ -94,6 +94,7 @@
 <style>
   .drawer-side {
     max-height: 100vh;
+    min-width: 340px;
     overflow-y: scroll;
   }
 </style>

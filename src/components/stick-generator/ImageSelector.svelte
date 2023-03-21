@@ -17,6 +17,7 @@ const select = (item) => () => {
 let imageList = []
 
 async function updateImages(images, cropped){
+  if (!Array.isArray(images)){ return }
   if (!cropped){
     imageList = images.map(src => ({ src, value: src }))
     return

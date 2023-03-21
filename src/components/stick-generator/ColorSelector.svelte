@@ -1,10 +1,6 @@
 <script>
 export let selected
-export let colors = [
-  'red',
-  'green',
-  'blue'
-]
+export let colors = []
 const select = (item) => () => {
   // deselect
   if (selected === item){
@@ -16,13 +12,15 @@ const select = (item) => () => {
 </script>
 
 <div class="selector carousel">
-  {#each colors as color }
-    <div on:click={select(color)} class="carousel-item">
-      <div class="color" style="--color: {color}" class:selected="{selected === color}">
-        <div class="circle"></div>
+  {#if colors?.length}
+    {#each colors as color}
+      <div on:click={select(color)} class="carousel-item">
+        <div class="color" style="--color: {color}" class:selected="{selected === color}">
+          <div class="circle"></div>
+        </div>
       </div>
-    </div>
-  {/each}
+    {/each}
+  {/if}
 </div>
 
 <style>
