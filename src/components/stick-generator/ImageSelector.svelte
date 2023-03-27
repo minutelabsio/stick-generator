@@ -63,6 +63,7 @@ $: updateImages(images, cropped)
 <style>
 .selector {
   cursor: pointer;
+  flex-wrap: wrap;
   /* border: 1px solid #666; */
 }
 .carousel-item {

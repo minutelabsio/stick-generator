@@ -25,24 +25,27 @@ const select = (item) => () => {
 
 <style>
 .selector {
+  /* margin: 10px 0; */
   cursor: pointer;
+  flex-wrap: wrap;
   /* border: 1px solid #666; */
 }
 .color {
   --color: white;
-  padding-right: 1em;
+  padding: 5px 0;
+  padding-right: 0em;
   border: 6px solid rgba(0, 0, 0, 0);
 }
 .color .circle {
-  width: 64px;
-  height: 64px;
+  width: 32px;
+  height: 32px;
   background: var(--color);
   border-radius: 50%;
-  transform: scale(0.6);
+  transform: scale(0.8);
   transition: transform 0.15s ease;
 }
 .color:hover .circle,
 .color.selected .circle {
-  transform: scale(1);
+  transform: scale(1.6);
 }
 </style>
