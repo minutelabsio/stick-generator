@@ -68,7 +68,24 @@ const skinColors = [
   '#FFFFFF',
 ]
 const facialHairColors = hairColors
-const hatColors = colors
+const hatColors = [
+  '#7CCDEB',
+  '#287CED',
+  '#E4A718',
+  '#F37C21',
+  '#DB403F',
+  '#F8E15F',
+  '#A2D57A',
+  '#5A8847',
+  '#726557',
+  '#C0887F',
+  '#F397D2',
+  '#CF71E8',
+  '#8C60D4',
+  '#80807F',
+  '#4D4D4C',
+  '#E4E4E3',
+]
 const mockBase = `${base}/stick-assets`
 const bodies = fileList(`${mockBase}/Bodies/body`)
 const heads = fileList(`${mockBase}/Heads/head`)
