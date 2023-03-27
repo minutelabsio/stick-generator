@@ -3,7 +3,7 @@ import { croppedImage, drawImage, loadImage, offscreenCanvas } from '$lib/canvas
 export let cropped = false
 export let images = []
 export let selected
-export let padding = 42
+export let padding = 6
 export let imageWidth = 100
 const select = (item) => () => {
   // deselect
@@ -16,31 +16,37 @@ const select = (item) => () => {
 
 let imageList = []
 
-async function getComposite(images){
-  if (!Array.isArray(images)) { return images }
-  const layers = await Promise.all(images.map(src => loadImage(src)))
-  const ctx = offscreenCanvas(layers[0].width, layers[0].height, (ctx) => {
-    layers.forEach(img => drawImage(ctx, img, 0, 0))
-  })
-  return ctx.canvas.toDataURL()
+
+async function getMaybeCropped(img, cropped){
+  const isStr = typeof img === 'string'
+  if (!cropped){
+    if (isStr){ return img }
+    return img.toDataURL()
+  }
+  const image = isStr ? await loadImage(img) : img
+  const s = image.width / imageWidth
+  return croppedImage(image, s * padding)
 }
 
+async function getComposite(images, cropped){
+  if (!Array.isArray(images)) { return await getMaybeCropped(images, cropped) }
+  const layers = await Promise.all(images.map(src => loadImage(src)))
+  const scale = imageWidth / layers[0].width
+  const ctx = offscreenCanvas(scale * layers[0].width, scale * layers[0].height, (ctx) => {
+    ctx.scale(scale, scale)
+    layers.forEach(img => drawImage(ctx, img, 0, 0))
+  })
+  return await getMaybeCropped(ctx.canvas, cropped)
+}
+
+let lastImages
 async function updateImages(images, cropped){
+  if (lastImages === images){ return }
+  lastImages = images
   if (!Array.isArray(images)){ return }
-  if (!cropped){
-    imageList = await Promise.all(images.map(async assets =>
-      ({ src: await getComposite(assets), value: assets }))
-    )
-    return
-  }
-  imageList = await Promise.all(images.map(async (assets) => {
-    const src = await getComposite(assets)
-    const img = await loadImage(src)
-    return {
-      src: croppedImage(img, padding),
-      value: assets
-    }
-  }))
+  imageList = await Promise.all(images.map(async assets =>
+    ({ src: await getComposite(assets, cropped), value: assets }))
+  )
 }
 
 $: updateImages(images, cropped)

@@ -104,8 +104,8 @@ export function boundingBox(ctx){
   }
 }
 
-export function croppedImage(img, padding = 0){
-  const ctx = offscreenCanvas(img.width, img.height, (ctx) => {
+export function croppedImage(img, padding = 0, scale = 1){
+  const ctx = offscreenCanvas(scale * img.width, scale * img.height, (ctx) => {
     ctx.drawImage(img, 0, 0)
   })
   const box = boundingBox(ctx)
