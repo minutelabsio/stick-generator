@@ -43,7 +43,8 @@ async function draw(Draw, props){
     head,
     hairFront,
     hairBack,
-    facialHairMask,
+    beardMask,
+    mustacheMask,
     glasses,
     accessory,
     hat,
@@ -53,7 +54,8 @@ async function draw(Draw, props){
     loadImage(Assets.heads[0]),
     loadImage(hairStyleFront),
     loadImage(hairStyleBack),
-    loadImage(props.facialHairStyle),
+    loadImage(props.beardStyle),
+    loadImage(props.mustacheStyle),
     loadImage(props.glasses),
     loadImage(props.accessory),
     loadImage(props.hat),
@@ -81,8 +83,11 @@ async function draw(Draw, props){
   const { canvas: hairBackColor}  = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, hairBackMask, props.hairColor)
   })
-  const { canvas: facialHair } = offscreenCanvas(width, height, (ctx) => {
-    drawColorMask(ctx, facialHairMask, props.facialHairColor)
+  const { canvas: beard } = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, beardMask, props.facialHairColor)
+  })
+  const { canvas: mustache } = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, mustacheMask, props.facialHairColor)
   })
   const { canvas: hatColor } = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, hatMask, props.hatColor)
@@ -95,7 +100,8 @@ async function draw(Draw, props){
     hairBack,
     body,
     skinColor,
-    facialHair,
+    beard,
+    mustache,
     head,
     hairFrontColor,
     hairFront,
@@ -123,7 +129,8 @@ let hatColor
 let hairStyle
 let hairColor
 let skinColor
-let facialHairStyle
+let beardStyle
+let mustacheStyle
 let facialHairColor
 let glasses
 let accessory
@@ -137,7 +144,8 @@ const reset = () => {
   hairStyle = undefined
   hairColor = undefined
   skinColor = randomSelection(Assets.skinColor)
-  facialHairStyle = undefined
+  beardStyle = undefined
+  mustacheStyle = undefined
   facialHairColor = undefined
   glasses = undefined
   accessory = undefined
@@ -151,7 +159,7 @@ $: if (hat && !hatColor){
 $: if (hairStyle && !hairColor){
   hairColor = Assets?.hairColors[0]
 }
-$: if (facialHairStyle && !facialHairColor){
+$: if ((beardStyle || mustacheStyle) && !facialHairColor){
   facialHairColor = Assets?.facialHairColors[0]
 }
 
@@ -188,7 +196,8 @@ $: stickFigureCfg = ready && checkReset(dataEntry) && withDefaults({
   hairStyle,
   hairColor,
   skinColor,
-  facialHairStyle,
+  beardStyle,
+  mustacheStyle,
   facialHairColor,
   glasses,
   accessory,
@@ -280,8 +289,10 @@ onMount(async () => {
       <ColorSelector bind:selected={skinColor} colors={Assets.skinColors}/>
     </div>
     <div class="stick-option">
-      <h3>Facial Hair</h3>
-      <ImageSelector cropped bind:selected={facialHairStyle} images={Assets.facialHairStyles}/>
+      <h3>Beard</h3>
+      <ImageSelector cropped bind:selected={beardStyle} images={Assets.beardStyles}/>
+      <h3>Mustache</h3>
+      <ImageSelector cropped bind:selected={mustacheStyle} images={Assets.mustacheStyles}/>
       <ColorSelector bind:selected={facialHairColor} colors={Assets.facialHairColors}/>
     </div>
     <div class="stick-option">

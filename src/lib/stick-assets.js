@@ -138,7 +138,6 @@ function hairFrontBack(list){
   const byId = {}
   for (const file of list){
     const id = getHairId(file)
-    console.log(id)
     byId[id] = byId[id] || []
     if (isHairBack(file)){
       byId[id].push(file)
@@ -163,7 +162,8 @@ export default {
       heads,
       headMasks,
       hairStyles,
-      facialHairStyles,
+      beardStyles,
+      mustacheStyles,
       glasses,
       accessories,
       hats,
@@ -173,7 +173,8 @@ export default {
       fetchList(basePath, 'Heads', 'head'),
       fetchList(basePath, 'Heads', 'maskhead'),
       fetchList(basePath, 'Hairs', 'hair'),
-      fetchList(basePath, 'Facial Hairs', 'facialhair'),
+      fetchList(basePath, 'Facial Hairs', 'beard'),
+      fetchList(basePath, 'Facial Hairs', 'mustache'),
       fetchList(basePath, 'Glasses', 'glasses'),
       fetchList(basePath, 'Accessories', 'accessory'),
       fetchList(basePath, 'Hats', 'hat'),
@@ -185,7 +186,8 @@ export default {
     assets.hairStyles = hairFrontBack(hairStyles)
     assets.hairColors = hairColors
     assets.skinColors = skinColors
-    assets.facialHairStyles = facialHairStyles
+    assets.beardStyles = beardStyles
+    assets.mustacheStyles = mustacheStyles
     assets.facialHairColors = facialHairColors
     assets.glasses = glasses
     assets.accessories = accessories
