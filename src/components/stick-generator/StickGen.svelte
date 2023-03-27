@@ -15,6 +15,7 @@ import {
   offscreenCanvas,
   drawColorMask,
 } from '$lib/canvas.js'
+  import LoadingSpinner from '$components/common/LoadingSpinner.svelte'
 
 let canvasWrap
 let Drawing
@@ -165,6 +166,9 @@ const withDefaults = (obj) => {
   if (!obj.skinColor){
     obj.skinColor = randomSelection(Assets.skinColor)
   }
+  if (!obj.facialHairColor){
+    obj.facialHairColor = obj.hairColor
+  }
   return obj
 }
 
@@ -225,7 +229,7 @@ async function saveImage(){
 }
 
 onMount(async () => {
-  Assets = await StickAssets.load()
+  Assets = await StickAssets.load(true)
   ready = true
   const cfg = {
     el: canvasWrap,
@@ -288,16 +292,18 @@ onMount(async () => {
       <h3>Accessory</h3>
       <ImageSelector cropped bind:selected={accessory} images={Assets.accessories}/>
     </div>
-    <div class="stick-option">
+    <!-- <div class="stick-option">
       <h3>Custom Images</h3>
       <div class="btn-group">
         <button class="btn" on:click={() => changeLayer(1)}>«</button>
         <button class="btn">Layer {nLayers - customImageLayerIndex}</button>
         <button class="btn" on:click={() => changeLayer(-1)}>»</button>
       </div>
-      <!-- <CustomImageSelector bind:selected={customImage}/> -->
-    </div>
+      <CustomImageSelector bind:selected={customImage}/>
+    </div> -->
   </div>
+  {:else}
+  <LoadingSpinner />
   {/if}
 </div>
 

@@ -25,6 +25,7 @@ specifiers:
   prettier: ~2.2.1
   prettier-plugin-svelte: ^2.2.0
   qrcode-svg: ^1.1.0
+  streaming-iterables: ^7.1.0
   svelte: ^3.34.0
   svelte-check: ^2.0.0
   svelte-preprocess: ^4.0.0
@@ -45,6 +46,7 @@ dependencies:
   clipboard-copy: 4.0.1
   csv-parse: 5.3.6
   qrcode-svg: 1.1.0
+  streaming-iterables: 7.1.0
   uint8arrays: 4.0.3
   uuid: 9.0.0
   webnative: 0.36.1
@@ -4219,6 +4221,11 @@ packages:
     resolution: {integrity: sha512-KXDYZ9dszj6bzvnEMRYvxgeTHU74QBFL54XKtP3nyMuJ81CFYtABZ3bAzL2EdFUaEwJOBOgENyFj3R7oTzDyyw==}
     engines: {node: '>=4', npm: '>=6'}
     dev: true
+
+  /streaming-iterables/7.1.0:
+    resolution: {integrity: sha512-t2KmiLVhqafTRqGefD98s5XAMskfkfprr/BTzPIZz0kWB23iyR7XUkY03yjUf4aZpAuuV2/2SUOVri3LgKuOKw==}
+    engines: {node: '>=14'}
+    dev: false
 
   /streamsearch/1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}

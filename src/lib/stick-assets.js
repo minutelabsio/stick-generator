@@ -1,4 +1,6 @@
 import { base } from '$app/paths'
+import { pipeline, parallelMap, consume } from 'streaming-iterables'
+import { loadImage } from './canvas'
 
 const fileList = (pfx, count = 1) => {
   return Array.from({ length: count }, (_, i) => {
@@ -65,16 +67,7 @@ const skinColors = [
   '#4F3B33',
   '#FFFFFF',
 ]
-const facialHairColors = [
-  '#1778BA',
-  '#333333',
-  '#726557',
-  '#7C3E99',
-  '#808080',
-  '#CB7844',
-  '#DBD1B7',
-  '#E4E4E4',
-]
+const facialHairColors = hairColors
 const hatColors = colors
 const mockBase = `${base}/stick-assets`
 const bodies = fileList(`${mockBase}/Bodies/body`)
@@ -145,7 +138,7 @@ function hairFrontBack(list){
 }
 
 export default {
-  async load(){
+  async load(preload){
     const assets = {}
     const basePath = `${base}/api/assets`
     const [
@@ -182,6 +175,14 @@ export default {
     assets.hats = hats
     assets.hatMasks = hatMasks
     assets.hatColors = hatColors
+    if (preload){
+      const allImages = [...bodies, ...heads, ...headMasks, ...hairStyles, ...facialHairStyles, ...glasses, ... accessories, ...hats, ...hatMasks]
+      await pipeline(
+        () => allImages,
+        parallelMap(8, (src) => loadImage(src).catch(() => true)),
+        consume
+      )
+    }
     return assets
   }
 }
