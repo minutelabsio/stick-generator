@@ -39,8 +39,8 @@ function csvToJson(text : string){
   return rows
 }
 
-async function getResponsesFromR2(bucket, response){
-  const obj = await bucket.get(`responses/${response}`)
+async function getResponsesFromR2(bucket, filename){
+  const obj = await bucket.get(`responses/${filename}`)
   if (!obj){
     return null
   }
@@ -57,18 +57,19 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
   }
   try {
     const { response } = params
+    const filename = decodeURIComponent(response as string)
     const bucket = env.STICK_FIGURES
     const kv = env.STICK_FIGURE_DATA
-    const data = await kv.get(`${response}`, 'text')
+    const data = await kv.get(`${filename}`, 'text')
     if (data){
       return setCache(new Response(data))
     }
-    const rows = await getResponsesFromR2(bucket, response)
+    const rows = await getResponsesFromR2(bucket, filename)
     if (!rows) {
       return setCache(new Response('Not found', { status: 404 }))
     }
     const text = JSON.stringify(rows)
-    await kv.put(`${response}`, text)
+    await kv.put(`${filename}`, text)
     return setCache(new Response(text, { headers: { 'Content-Type': 'text/json' }}))
   } catch (e) {
     return setCache(new Response(e.message, { status: 500 }))
@@ -91,8 +92,9 @@ function applyUpdates(original, updates : Array<any>){
 export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }) => {
   try {
     const { response } = params
+    const filename = decodeURIComponent(response as string)
     const kv = env.STICK_FIGURE_DATA
-    const data = await kv.get(`${response}`, 'json')
+    const data = await kv.get(`${filename}`, 'json')
     if (data === null) {
       return setCache(new Response('Not found', { status: 404 }))
     }
@@ -105,7 +107,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     const updatedData = applyUpdates(data, updates)
 
     const text = JSON.stringify(updatedData)
-    await kv.put(`${response}`, text)
+    await kv.put(`${filename}`, text)
 
     return setCache(new Response(text, { headers: { 'Content-Type': 'text/json' } }))
   } catch (e) {
