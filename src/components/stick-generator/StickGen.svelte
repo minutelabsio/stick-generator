@@ -138,12 +138,12 @@ let customImage
 let customImageLayerIndex = 0
 
 const reset = () => {
-  body = randomSelection(Assets.bodies)
+  body = undefined
   hat = undefined
   hatColor = undefined
   hairStyle = undefined
   hairColor = undefined
-  skinColor = randomSelection(Assets.skinColor)
+  skinColor = undefined
   beardStyle = undefined
   mustacheStyle = undefined
   facialHairColor = undefined
