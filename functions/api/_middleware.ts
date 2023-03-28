@@ -1,4 +1,4 @@
-export async function onRequest({ env, next }) {
-  env.mock = false
+export async function onRequest({ request, env, next }) {
+  env.mock = !request.url.startsWith('https://stick')
   return await next()
 }
