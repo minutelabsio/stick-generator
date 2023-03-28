@@ -4,12 +4,13 @@ compatibility_date = "2023-03-07"
 account_id = "847aff3ed9c07c12eae4f4747ae61e8b"
 
 workers_dev = false
-routes = [
-  { pattern = "stick-generator.internal.minutelabs.io", custom_domain = true },
-]
+# routes = [
+#   { pattern = "stick-generator.internal.minutelabs.io", custom_domain = true },
+# ]
 
 r2_buckets  = [
-  { binding = "STICK_FIGURES", bucket_name = "stick-figures-dev", preview_bucket_name = "stick-figures-dev" }
+  { binding = "STICK_FIGURES", bucket_name = "stick-figures", preview_bucket_name = "stick-figures" },
+  { binding = "STICK_FIGURES_ASSETS", bucket_name = "stick-figures-assets", preview_bucket_name = "stick-figures-assets" }
 ]
 
 kv_namespaces = [

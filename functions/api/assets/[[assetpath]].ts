@@ -30,7 +30,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
   try {
     const { assetpath } = params
     if (!assetpath) { return setCache(new Response('Not found', { status: 404 }))  }
-    const bucket = env.STICK_FIGURES
+    const bucket = env.STICK_FIGURES_ASSETS
     if (assetpath.length === 1){
       const category = decodeURIComponent(assetpath[0])
       if (env.mock){
