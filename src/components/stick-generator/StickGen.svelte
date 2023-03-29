@@ -5,6 +5,7 @@ import ImageSelector from './ImageSelector.svelte'
 import ColorSelector from './ColorSelector.svelte'
 import { addNotification } from '$lib/notifications.js'
 import StickAssets from '$lib/stick-assets.js'
+import AssetUpload from './AssetUpload.svelte'
 // import CustomImageSelector from './CustomImageSelector.svelte'
 import {
   downloadCanvasImage,
@@ -15,11 +16,10 @@ import {
   offscreenCanvas,
   drawColorMask,
 } from '$lib/canvas.js'
-  import LoadingSpinner from '$components/common/LoadingSpinner.svelte'
+import LoadingSpinner from '$components/common/LoadingSpinner.svelte'
 
 let canvasWrap
 let Drawing
-let Assets : any = {}
 let ready = false
 
 export let prefix
@@ -38,6 +38,7 @@ async function draw(Draw, props){
   const { ctx } = Draw.offcanvas
   const { width, height } = ctx.canvas
   const [hairStyleFront, hairStyleBack] = Array.isArray(props.hairStyle) ? props.hairStyle : [props.hairStyle]
+  const allHeads = await StickAssets.heads.value
   const [
     body,
     head,
@@ -51,7 +52,7 @@ async function draw(Draw, props){
     custom
   ] = await Promise.all([
     loadImage(props.body),
-    loadImage(Assets.heads[0]),
+    loadImage(allHeads[0]),
     loadImage(hairStyleFront),
     loadImage(hairStyleBack),
     loadImage(props.beardStyle),
@@ -68,7 +69,7 @@ async function draw(Draw, props){
     hairBackMask,
     hatMask
   ] = await Promise.all([
-    loadImage(getMaskFile(Assets.heads[0])),
+    loadImage(getMaskFile(allHeads[0])),
     loadImage(getMaskFile(hairStyleFront)),
     loadImage(getMaskFile(hairStyleBack)),
     loadImage(getMaskFile(props.hat)),
@@ -153,17 +154,7 @@ const reset = () => {
   customImageLayerIndex = 0
 }
 
-$: if (hat && !hatColor){
-  hatColor = Assets?.hatColors[0]
-}
-$: if (hairStyle && !hairColor){
-  hairColor = Assets?.hairColors[0]
-}
-$: if ((beardStyle || mustacheStyle) && !facialHairColor){
-  facialHairColor = Assets?.facialHairColors[0]
-}
-
-const withDefaults = (obj) => {
+const withDefaults = (obj, Assets) => {
   if (!dataEntry.stickProps){ return obj }
   for (const key of Object.keys(obj)){
     obj[key] = obj[key] === undefined ? dataEntry?.stickProps[key] : obj[key]
@@ -171,10 +162,16 @@ const withDefaults = (obj) => {
   if (!obj.body){
     obj.body = randomSelection(Assets.bodies)
   }
+  if (obj.hat && !obj.hatColor){
+    obj.hatColor = Assets?.hatColors[0]
+  }
+  if (obj.hairStyle && !obj.hairColor){
+    obj.hairColor = Assets?.hairColors[0]
+  }
   if (!obj.skinColor){
     obj.skinColor = randomSelection(Assets.skinColor)
   }
-  if (!obj.facialHairColor){
+  if ((obj.beardStyle || obj.mustacheStyle) && !obj.facialHairColor){
     obj.facialHairColor = obj.hairColor
   }
   return obj
@@ -189,21 +186,27 @@ const checkReset = (dataEntry) => {
   return true
 }
 
-$: stickFigureCfg = ready && checkReset(dataEntry) && withDefaults({
-  body,
-  hat,
-  hatColor,
-  hairStyle,
-  hairColor,
-  skinColor,
-  beardStyle,
-  mustacheStyle,
-  facialHairColor,
-  glasses,
-  accessory,
-  customImage,
-  customImageLayerIndex
-})
+let stickFigureCfg = null
+$: (async (ready, dataEntry, StickAssets) => {
+  if (ready && checkReset(dataEntry)){
+    stickFigureCfg = withDefaults({
+      body,
+      hat,
+      hatColor,
+      hairStyle,
+      hairColor,
+      skinColor,
+      beardStyle,
+      mustacheStyle,
+      facialHairColor,
+      glasses,
+      accessory,
+      customImage,
+      customImageLayerIndex
+    }, await StickAssets.getAll())
+  }
+})(ready, dataEntry, StickAssets)
+
 $: draw(Drawing, stickFigureCfg)
 const nLayers = 12
 
@@ -238,7 +241,7 @@ async function saveImage(){
 }
 
 onMount(async () => {
-  Assets = await StickAssets.load(true)
+  await StickAssets.refreshAll()
   ready = true
   const cfg = {
     el: canvasWrap,
@@ -270,38 +273,40 @@ onMount(async () => {
   </div>
   {#if ready}
   <div class="controls flex-none">
-    <div class="stick-option">
-      <h3>Bodies</h3>
-      <ImageSelector cropped bind:selected={body} images={Assets.bodies}/>
-    </div>
+    <AssetUpload category="Bodies" onUpload={StickAssets.bodies.refresh}>
+      <div class="stick-option">
+        <h3>Bodies</h3>
+        <ImageSelector cropped bind:selected={body} images={StickAssets.bodies.value}/>
+      </div>
+    </AssetUpload>
     <div class="stick-option">
       <h3>Hair Style</h3>
-      <ImageSelector cropped bind:selected={hairStyle} images={Assets.hairStyles}/>
-      <ColorSelector bind:selected={hairColor} colors={Assets.hairColors}/>
+      <ImageSelector cropped bind:selected={hairStyle} images={StickAssets.hairStyles.value}/>
+      <ColorSelector bind:selected={hairColor} colors={StickAssets.hairColors}/>
     </div>
     <div class="stick-option">
       <h3>Hat</h3>
-      <ImageSelector cropped bind:selected={hat} images={Assets.hats}/>
-      <ColorSelector bind:selected={hatColor} colors={Assets.hatColors}/>
+      <ImageSelector cropped bind:selected={hat} images={StickAssets.hats.value}/>
+      <ColorSelector bind:selected={hatColor} colors={StickAssets.hatColors}/>
     </div>
     <div class="stick-option">
       <h3>Skin Color</h3>
-      <ColorSelector bind:selected={skinColor} colors={Assets.skinColors}/>
+      <ColorSelector bind:selected={skinColor} colors={StickAssets.skinColors}/>
     </div>
     <div class="stick-option">
       <h3>Beard</h3>
-      <ImageSelector cropped bind:selected={beardStyle} images={Assets.beardStyles}/>
+      <ImageSelector cropped bind:selected={beardStyle} images={StickAssets.beardStyles.value}/>
       <h3>Mustache</h3>
-      <ImageSelector cropped bind:selected={mustacheStyle} images={Assets.mustacheStyles}/>
-      <ColorSelector bind:selected={facialHairColor} colors={Assets.facialHairColors}/>
+      <ImageSelector cropped bind:selected={mustacheStyle} images={StickAssets.mustacheStyles.value}/>
+      <ColorSelector bind:selected={facialHairColor} colors={StickAssets.facialHairColors}/>
     </div>
     <div class="stick-option">
       <h3>Glasses</h3>
-      <ImageSelector cropped bind:selected={glasses} images={Assets.glasses}/>
+      <ImageSelector cropped bind:selected={glasses} images={StickAssets.glasses.value}/>
     </div>
     <div class="stick-option">
       <h3>Accessory</h3>
-      <ImageSelector cropped bind:selected={accessory} images={Assets.accessories}/>
+      <ImageSelector cropped bind:selected={accessory} images={StickAssets.accessories.value}/>
     </div>
     <!-- <div class="stick-option">
       <h3>Custom Images</h3>

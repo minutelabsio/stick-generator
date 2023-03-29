@@ -1,3 +1,5 @@
+import { setCache } from '../cache'
+
 const MB = 1024 * 1024
 const MAX_UPLOAD_SIZE = 2 * MB
 
@@ -42,11 +44,11 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     const bucket = env.STICK_FIGURES
     const obj = await bucket.get(`images/${filename}`)
     if (obj === null) {
-      return new Response('Not found', { status: 404 })
+      return setCache(new Response('Not found', { status: 404 }))
     }
-    return new Response(obj.body)
+    return setCache(new Response(obj.body))
   } catch (e) {
-    return new Response(e.message, { status: 500 })
+    return setCache(new Response(e.message, { status: 500 }))
   }
 }
 
@@ -58,8 +60,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     const filename = parsePath(params.image)
     const bucket = env.STICK_FIGURES
     await bucket.put(`images/${filename}`, request.body)
-    return new Response('OK')
+    return setCache(new Response('OK'))
   } catch (e) {
-    return new Response(e.message, { status: 500 })
+    return setCache(new Response(e.message, { status: 500 }))
   }
 }

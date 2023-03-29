@@ -8,10 +8,8 @@ const fileList = (pfx, count = 1) => {
     return `${pfx}-${n}.png`
   })
 }
-const colors = [
-  'red', 'green', 'blue'
-]
 const hairColors = [
+  'white',
   '#292929',
   '#333333',
   '#4D4D4D',
@@ -145,7 +143,7 @@ function hairFrontBack(list){
       byId[id].unshift(file)
     }
   }
-  return Object.values(byId).map(entry => {
+  return Object.values(byId).map((entry: any) => {
     if (entry.length === 1){
       return entry[0]
     }
@@ -153,55 +151,52 @@ function hairFrontBack(list){
   })
 }
 
-export default {
-  async load(preload){
-    const assets = {}
-    const basePath = `${base}/api/assets`
-    const [
-      bodies,
-      heads,
-      headMasks,
-      hairStyles,
-      beardStyles,
-      mustacheStyles,
-      glasses,
-      accessories,
-      hats,
-      hatMasks
-    ] = await Promise.all([
-      fetchList(basePath, 'Bodies', 'body'),
-      fetchList(basePath, 'Heads', 'head'),
-      fetchList(basePath, 'Heads', 'maskhead'),
-      fetchList(basePath, 'Hairs', 'hair'),
-      fetchList(basePath, 'Facial Hairs', 'beard'),
-      fetchList(basePath, 'Facial Hairs', 'mustache'),
-      fetchList(basePath, 'Glasses', 'glasses'),
-      fetchList(basePath, 'Accessories', 'accessory'),
-      fetchList(basePath, 'Hats', 'hat'),
-      fetchList(basePath, 'Hats', 'maskhat'),
-    ])
-    assets.bodies = bodies
-    assets.heads = heads
-    assets.headMasks = headMasks
-    assets.hairStyles = hairFrontBack(hairStyles)
-    assets.hairColors = hairColors
-    assets.skinColors = skinColors
-    assets.beardStyles = beardStyles
-    assets.mustacheStyles = mustacheStyles
-    assets.facialHairColors = facialHairColors
-    assets.glasses = glasses
-    assets.accessories = accessories
-    assets.hats = hats
-    assets.hatMasks = hatMasks
-    assets.hatColors = hatColors
-    if (preload){
-      const allImages = [...bodies, ...heads, ...headMasks, ...hairStyles, ...facialHairStyles, ...glasses, ... accessories, ...hats, ...hatMasks]
-      await pipeline(
-        () => allImages,
-        parallelMap(8, (src) => loadImage(src).catch(() => true)),
-        consume
-      )
+type Loader = { refresh: () => void; value: Promise<any> }
+const createLoader = (fn): Loader => {
+  const loader = {
+    value: Promise.resolve([]),
+    refresh(){
+      loader.value = Promise.resolve(fn())
     }
-    return assets
+  }
+  return loader
+}
+
+const isLoader = (asset): asset is Loader => ('refresh' in asset)
+const basePath = `${base}/api/assets`
+const Assets = {
+  bodies: createLoader(() => fetchList(basePath, 'Bodies', 'body')),
+  heads: createLoader(() => fetchList(basePath, 'Heads', 'head')),
+  headMasks: createLoader(() => fetchList(basePath, 'Heads', 'maskhead')),
+  hairStyles: createLoader(async () => hairFrontBack(await fetchList(basePath, 'Hairs', 'hair'))),
+  hairColors: hairColors,
+  skinColors: skinColors,
+  beardStyles: createLoader(() => fetchList(basePath, 'Facial Hairs', 'beard')),
+  mustacheStyles: createLoader(() => fetchList(basePath, 'Facial Hairs', 'mustache')),
+  facialHairColors: facialHairColors,
+  glasses: createLoader(() => fetchList(basePath, 'Glasses', 'glasses')),
+  accessories: createLoader(() => fetchList(basePath, 'Accessories', 'accessory')),
+  hats: createLoader(() => fetchList(basePath, 'Hats', 'hat')),
+  hatMasks: createLoader(() => fetchList(basePath, 'Hats', 'maskhat')),
+  hatColors: hatColors,
+  async getAll(){
+    const entries = await Promise.all(
+      Object.entries(Assets)
+        .filter(([key, asset]) => typeof asset !== 'function')
+        .map(async ([key, asset]) => {
+          if (isLoader(asset)){ return [key, await asset.value] }
+          return [key, asset]
+        })
+    )
+    return Object.fromEntries(entries)
+  },
+  async refreshAll(){
+    await Promise.allSettled(
+      Object.values(Assets)
+        .filter(isLoader)
+        .map(asset => asset?.refresh())
+    )
   }
 }
+
+export default Assets

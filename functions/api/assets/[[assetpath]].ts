@@ -57,3 +57,21 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     return setCache(new Response(e.message, { status: 500 }))
   }
 }
+
+export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }) => {
+  try {
+    if (!params.assetpath) {
+      throw new Error('No asset path specified')
+    }
+    const filename = parsePath(params.assetpath)
+    const bucket = env.STICK_FIGURES_ASSETS
+    const obj = await bucket.head(`assets/${filename}`)
+    if (obj){
+      return setCache(new Response(`File already exists with the name ${filename}`, { status: 400 }))
+    }
+    await bucket.put(`assets/${filename}`, request.body)
+    return setCache(new Response('OK'))
+  } catch (e) {
+    return setCache(new Response(e.message, { status: 500 }))
+  }
+}

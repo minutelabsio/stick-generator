@@ -51,7 +51,6 @@
   }
 
 </script>
-
 <div class="flex flex-row">
   <div
     class="drawer-side flex"

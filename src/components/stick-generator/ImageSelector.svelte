@@ -1,7 +1,7 @@
 <script>
 import { croppedImage, drawImage, loadImage, offscreenCanvas } from '$lib/canvas.js'
 export let cropped = false
-export let images = []
+export let images = Promise.resolve([])
 export let selected
 export let padding = 6
 export let imageWidth = 100
@@ -40,7 +40,8 @@ async function getComposite(images, cropped){
 }
 
 let lastImages
-async function updateImages(images, cropped){
+async function updateImages(imagePromise, cropped){
+  const images = await imagePromise
   if (lastImages === images){ return }
   lastImages = images
   if (!Array.isArray(images)){ return }
@@ -53,11 +54,17 @@ $: updateImages(images, cropped)
 </script>
 
 <div class="carousel selector stick-selector">
-  {#each imageList as {src, value}}
-    <div on:click={select(value)} class="carousel-item" class:selected="{selected === value}">
-      <img src={src} width="{imageWidth}"/>
-    </div>
-  {/each}
+  {#await images}
+    <p>Loading...</p>
+  {:then images}
+    {#each imageList as {src, value}}
+      <div on:click={select(value)} class="carousel-item" class:selected="{selected === value}">
+        <img src={src} width="{imageWidth}"/>
+      </div>
+    {/each}
+  {:catch error}
+    <p>Error loading images</p>
+  {/await}
 </div>
 
 <style>

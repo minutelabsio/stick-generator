@@ -66,6 +66,7 @@
     "@wellcaffeinated/view-draw": "^0.0.4",
     "clipboard-copy": "^4.0.1",
     "csv-parse": "^5.3.6",
+    "lodash": "^4.17.21",
     "qrcode-svg": "^1.1.0",
     "streaming-iterables": "^7.1.0",
     "uint8arrays": "^4.0.2",
