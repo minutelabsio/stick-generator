@@ -4,7 +4,7 @@ import { createCanvas } from '@wellcaffeinated/view-draw'
 import ImageSelector from './ImageSelector.svelte'
 import ColorSelector from './ColorSelector.svelte'
 import { addNotification } from '$lib/notifications.js'
-import StickAssets from '$lib/stick-assets.js'
+import _StickAssets from '$lib/stick-assets.js'
 import AssetUpload from './AssetUpload.svelte'
 // import CustomImageSelector from './CustomImageSelector.svelte'
 import {
@@ -18,6 +18,7 @@ import {
 } from '$lib/canvas.js'
 import LoadingSpinner from '$components/common/LoadingSpinner.svelte'
 
+let StickAssets = _StickAssets
 let canvasWrap
 let Drawing
 let ready = false
@@ -240,6 +241,15 @@ async function saveImage(){
   }
 }
 
+const refreshAssets = (category) => {
+  if (Array.isArray(category)){
+    category.forEach(c => refreshAssets(c))
+    return
+  }
+  StickAssets[category]?.refresh()
+  StickAssets = StickAssets
+}
+
 onMount(async () => {
   await StickAssets.refreshAll()
   ready = true
@@ -273,41 +283,51 @@ onMount(async () => {
   </div>
   {#if ready}
   <div class="controls flex-none">
-    <AssetUpload category="Bodies" onUpload={StickAssets.bodies.refresh}>
+    <AssetUpload category="Bodies" onUpload={() => refreshAssets('bodies')}>
       <div class="stick-option">
         <h3>Bodies</h3>
         <ImageSelector cropped bind:selected={body} images={StickAssets.bodies.value}/>
       </div>
     </AssetUpload>
-    <div class="stick-option">
-      <h3>Hair Style</h3>
-      <ImageSelector cropped bind:selected={hairStyle} images={StickAssets.hairStyles.value}/>
-      <ColorSelector bind:selected={hairColor} colors={StickAssets.hairColors}/>
-    </div>
-    <div class="stick-option">
-      <h3>Hat</h3>
-      <ImageSelector cropped bind:selected={hat} images={StickAssets.hats.value}/>
-      <ColorSelector bind:selected={hatColor} colors={StickAssets.hatColors}/>
-    </div>
+    <AssetUpload category="Hairs" onUpload={() => refreshAssets('hairStyles')}>
+      <div class="stick-option">
+        <h3>Hair Style</h3>
+        <ImageSelector cropped bind:selected={hairStyle} images={StickAssets.hairStyles.value}/>
+        <ColorSelector bind:selected={hairColor} colors={StickAssets.hairColors}/>
+      </div>
+    </AssetUpload>
+    <AssetUpload category="Hats" onUpload={() => refreshAssets('hats')}>
+      <div class="stick-option">
+        <h3>Hat</h3>
+        <ImageSelector cropped bind:selected={hat} images={StickAssets.hats.value}/>
+        <ColorSelector bind:selected={hatColor} colors={StickAssets.hatColors}/>
+      </div>
+    </AssetUpload>
     <div class="stick-option">
       <h3>Skin Color</h3>
       <ColorSelector bind:selected={skinColor} colors={StickAssets.skinColors}/>
     </div>
-    <div class="stick-option">
-      <h3>Beard</h3>
-      <ImageSelector cropped bind:selected={beardStyle} images={StickAssets.beardStyles.value}/>
-      <h3>Mustache</h3>
-      <ImageSelector cropped bind:selected={mustacheStyle} images={StickAssets.mustacheStyles.value}/>
-      <ColorSelector bind:selected={facialHairColor} colors={StickAssets.facialHairColors}/>
-    </div>
-    <div class="stick-option">
-      <h3>Glasses</h3>
-      <ImageSelector cropped bind:selected={glasses} images={StickAssets.glasses.value}/>
-    </div>
-    <div class="stick-option">
-      <h3>Accessory</h3>
-      <ImageSelector cropped bind:selected={accessory} images={StickAssets.accessories.value}/>
-    </div>
+    <AssetUpload category="Facial Hairs" onUpload={() => {() => refreshAssets(['beardStyles', 'mustacheStyles'])}}>
+      <div class="stick-option">
+        <h3>Beard</h3>
+        <ImageSelector cropped bind:selected={beardStyle} images={StickAssets.beardStyles.value}/>
+        <h3>Mustache</h3>
+        <ImageSelector cropped bind:selected={mustacheStyle} images={StickAssets.mustacheStyles.value}/>
+        <ColorSelector bind:selected={facialHairColor} colors={StickAssets.facialHairColors}/>
+      </div>
+    </AssetUpload>
+    <AssetUpload category="Glasses" onUpload={() => refreshAssets('glasses')}>
+      <div class="stick-option">
+        <h3>Glasses</h3>
+        <ImageSelector cropped bind:selected={glasses} images={StickAssets.glasses.value}/>
+      </div>
+    </AssetUpload>
+    <AssetUpload category="Accessories" onUpload={() => refreshAssets('accessories')}>
+      <div class="stick-option">
+        <h3>Accessory</h3>
+        <ImageSelector cropped bind:selected={accessory} images={StickAssets.accessories.value}/>
+      </div>
+    </AssetUpload>
     <!-- <div class="stick-option">
       <h3>Custom Images</h3>
       <div class="btn-group">

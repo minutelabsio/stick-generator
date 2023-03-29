@@ -31,40 +31,42 @@
 
     const files = Array.from(event.dataTransfer.items)
 
-    // Iterate over the dropped files and upload them to WNFS
-    await Promise.allSettled(
-      files.map(async item => {
-        if (item.kind === 'file') {
-          const file: File = item.getAsFile()
+    try {
+      // Iterate over the dropped files and upload them to WNFS
+      await Promise.all(
+        files.map(async item => {
+          if (item.kind === 'file') {
+            const file: File = item.getAsFile()
 
-          // If the dropped files aren't images, we don't want them!
-          if (!file.type.match('image/*')) {
-            addNotification('Please upload images only', 'error')
-            console.error('Please upload images only')
-          } else {
-            const res = await fetch(`/api/assets/${category}`, {
-              method: 'POST',
-              headers: {
-                "Content-Type": "image/png"
-              },
-              body: await fileToUint8Array(file)
-            })
-            if (!res.ok){
-              const msg = await res.text()
-              console.log(msg)
-              addNotification(msg, 'error')
+            // If the dropped files aren't images, we don't want them!
+            if (!file.type.match('image/*')) {
+              addNotification('Please upload images only', 'error')
+              console.error('Please upload images only')
             } else {
-              addNotification('Uploaded', 'info')
+              const res = await fetch(`/api/assets/${category}/${file.name}`, {
+                method: 'POST',
+                headers: {
+                  "Content-Type": "image/png"
+                },
+                body: await fileToUint8Array(file)
+              })
+              if (!res.ok){
+                const msg = await res.text()
+                throw new Error(msg as string)
+              } else {
+                addNotification('Uploaded', 'info')
+              }
             }
           }
-        }
-      })
-    )
-
-
-    onUpload()
-    // Disable isDragging state
-    isDragging = false
+        })
+      )
+      onUpload()
+    } catch (e) {
+      addNotification(e.message, 'error')
+    } finally {
+      // Disable isDragging state
+      isDragging = false
+    }
   }
 
   /**
