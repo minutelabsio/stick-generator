@@ -83,7 +83,19 @@
   <div class="drawer-content flex flex-col">
     <div class="px-4">
       {#if response && selected}
-      <img class="py-4" src={`/api/likeness/${response}/${selected.Filename}`} width="620" alt="likeness image"/>
+      <div class="grid grid-cols-4 gap-4">
+        <img class="py-4" src={`/api/likeness/${response}/${selected.Filename}`} width="620" alt="likeness image"/>
+        <table class="table-auto">
+          <tbody>
+            {#each Object.entries(selected) as [key, value]}
+              <tr>
+                <td class="px-4 py-1">{key}</td>
+                <td class="px-4 py-1">{value}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
       <StickGen prefix={response} dataEntry={selected} onSaved={onSaved} />
       {/if}
     </div>
