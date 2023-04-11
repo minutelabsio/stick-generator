@@ -1,4 +1,6 @@
-<script>
+<script lang="ts">
+import ColorPicker from 'svelte-awesome-color-picker'
+
 export let selected
 export let colors = []
 const select = (item) => () => {
@@ -12,6 +14,9 @@ const select = (item) => () => {
 </script>
 
 <div class="selector carousel">
+  <div class="carousel-item picker">
+    <ColorPicker bind:hex={selected} label="Custom"/>
+  </div>
   {#if colors?.length}
     {#each colors as color}
       <div on:click={select(color)} class="carousel-item">
@@ -24,6 +29,15 @@ const select = (item) => () => {
 </div>
 
 <style>
+.carousel {
+  overflow-x: visible;
+}
+.picker {
+  color: #999;
+}
+.picker {
+  align-items: center;
+}
 .selector {
   /* margin: 10px 0; */
   cursor: pointer;

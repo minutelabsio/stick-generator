@@ -28,6 +28,7 @@ specifiers:
   qrcode-svg: ^1.1.0
   streaming-iterables: ^7.1.0
   svelte: ^3.34.0
+  svelte-awesome-color-picker: ^2.4.1
   svelte-check: ^2.0.0
   svelte-preprocess: ^4.0.0
   svelte-seo: ^1.2.1
@@ -49,6 +50,7 @@ dependencies:
   lodash: 4.17.21
   qrcode-svg: 1.1.0
   streaming-iterables: 7.1.0
+  svelte-awesome-color-picker: 2.4.1
   uint8arrays: 4.0.3
   uuid: 9.0.0
   webnative: 0.36.1
@@ -1852,6 +1854,10 @@ packages:
       color-convert: 2.0.1
       color-string: 1.9.1
     dev: true
+
+  /colord/2.9.3:
+    resolution: {integrity: sha512-jeC1axXpnb0/2nn/Y1LPuLdgXBLH7aDcHu4KEKfqw3CUhX7ZpfBSlPKyqXE6btIgEzfWtrX3/tyBCaCvXvMkOw==}
+    dev: false
 
   /common-path-prefix/3.0.0:
     resolution: {integrity: sha512-QE33hToZseCH3jS0qN96O/bSh3kaw/h+Tq7ngyY9eWDUnTlTNUyqfqvCXioLe5Na5jFsL78ra/wuBU4iuEgd4w==}
@@ -4326,6 +4332,12 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
     dev: true
+
+  /svelte-awesome-color-picker/2.4.1:
+    resolution: {integrity: sha512-IzICGgaMRMgyK4uukm27UdTFfN7s0QN3eoFyIGiXXY8FCPumS9T+vffVG4rNhiuUUP4ga5SoGUE+KXuNj5dsrw==}
+    dependencies:
+      colord: 2.9.3
+    dev: false
 
   /svelte-check/2.10.3_svelte@3.55.1:
     resolution: {integrity: sha512-Nt1aWHTOKFReBpmJ1vPug0aGysqPwJh2seM1OvICfM2oeyaA62mOiy5EvkXhltGfhCcIQcq2LoE0l1CwcWPjlw==}

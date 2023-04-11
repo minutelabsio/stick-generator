@@ -173,13 +173,14 @@ const Assets = {
   skinColors: skinColors,
   beardStyles: createLoader(() => fetchList(basePath, 'Facial Hairs', 'beard')),
   mustacheStyles: createLoader(() => fetchList(basePath, 'Facial Hairs', 'mustache')),
+  longbeardStyles: createLoader(() => fetchList(basePath, 'Facial Hairs', 'longbeard')),
   facialHairColors: facialHairColors,
   glasses: createLoader(() => fetchList(basePath, 'Glasses', 'glasses')),
   accessories: createLoader(() => fetchList(basePath, 'Accessories', 'accessory')),
   hats: createLoader(() => fetchList(basePath, 'Hats', 'hat')),
   hatMasks: createLoader(() => fetchList(basePath, 'Hats', 'maskhat')),
   hatColors: hatColors,
-  async getAll(){
+  async getAll(): Promise<any> {
     const entries = await Promise.all(
       Object.entries(Assets)
         .filter(([key, asset]) => typeof asset !== 'function')
@@ -190,7 +191,7 @@ const Assets = {
     )
     return Object.fromEntries(entries)
   },
-  async refreshAll(){
+  async refreshAll(): Promise<void> {
     await Promise.allSettled(
       Object.values(Assets)
         .filter(isLoader)

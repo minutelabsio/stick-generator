@@ -47,6 +47,7 @@ async function draw(Draw, props){
     hairBack,
     beardMask,
     mustacheMask,
+    longbeard,
     glasses,
     accessory,
     hat,
@@ -58,6 +59,7 @@ async function draw(Draw, props){
     loadImage(hairStyleBack),
     loadImage(props.beardStyle),
     loadImage(props.mustacheStyle),
+    loadImage(props.longbeardStyle),
     loadImage(props.glasses),
     loadImage(props.accessory),
     loadImage(props.hat),
@@ -66,11 +68,13 @@ async function draw(Draw, props){
 
   const [
     headMask,
+    longbeardMask,
     hairFrontMask,
     hairBackMask,
     hatMask
   ] = await Promise.all([
     loadImage(getMaskFile(allHeads[0])),
+    loadImage(getMaskFile(props.longbeardStyle)),
     loadImage(getMaskFile(hairStyleFront)),
     loadImage(getMaskFile(hairStyleBack)),
     loadImage(getMaskFile(props.hat)),
@@ -91,6 +95,9 @@ async function draw(Draw, props){
   const { canvas: mustache } = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, mustacheMask, props.facialHairColor)
   })
+  const { canvas: longbeardColor } = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, longbeardMask, props.facialHairColor)
+  })
   const { canvas: hatColor } = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, hatMask, props.hatColor)
   })
@@ -105,6 +112,8 @@ async function draw(Draw, props){
     beard,
     mustache,
     head,
+    longbeardColor,
+    longbeard,
     hairFrontColor,
     hairFront,
     glasses,
@@ -132,6 +141,7 @@ let hairStyle
 let hairColor
 let skinColor
 let beardStyle
+let longbeardStyle
 let mustacheStyle
 let facialHairColor
 let glasses
@@ -139,16 +149,19 @@ let accessory
 let customImage
 let customImageLayerIndex = 0
 
+const transparent = '#00000000'
+
 const reset = () => {
   body = undefined
   hat = undefined
-  hatColor = undefined
+  hatColor = transparent
   hairStyle = undefined
-  hairColor = undefined
-  skinColor = undefined
+  hairColor = transparent
+  skinColor = transparent
   beardStyle = undefined
+  longbeardStyle = undefined
   mustacheStyle = undefined
-  facialHairColor = undefined
+  facialHairColor = transparent
   glasses = undefined
   accessory = undefined
   customImage = undefined
@@ -163,17 +176,17 @@ const withDefaults = (obj, Assets) => {
   if (!obj.body){
     obj.body = randomSelection(Assets.bodies)
   }
-  if (obj.hat && !obj.hatColor){
+  if (obj.hat && obj.hatColor === transparent){
     obj.hatColor = Assets?.hatColors[0]
   }
-  if (obj.hairStyle && !obj.hairColor){
+  if (obj.hairStyle && obj.hairColor === transparent){
     obj.hairColor = Assets?.hairColors[0]
   }
-  if (!obj.skinColor){
+  if (obj.skinColor === transparent){
     obj.skinColor = randomSelection(Assets.skinColor)
   }
-  if ((obj.beardStyle || obj.mustacheStyle) && !obj.facialHairColor){
-    obj.facialHairColor = obj.hairColor
+  if ((obj.beardStyle || obj.mustacheStyle || obj.longbeardStyle) && obj.facialHairColor === transparent){
+    obj.facialHairColor = obj.hairColor === transparent ? randomSelection(Assets.hairColors) : obj.hairColor
   }
   return obj
 }
@@ -198,6 +211,7 @@ $: (async (ready, dataEntry, StickAssets) => {
       hairColor,
       skinColor,
       beardStyle,
+      longbeardStyle,
       mustacheStyle,
       facialHairColor,
       glasses,
@@ -309,10 +323,12 @@ onMount(async () => {
     </div>
     <AssetUpload category="Facial Hairs" onUpload={() => {() => refreshAssets(['beardStyles', 'mustacheStyles'])}}>
       <div class="stick-option">
-        <h3>Beard</h3>
-        <ImageSelector cropped bind:selected={beardStyle} images={StickAssets.beardStyles.value}/>
         <h3>Mustache</h3>
         <ImageSelector cropped bind:selected={mustacheStyle} images={StickAssets.mustacheStyles.value}/>
+        <h3>Beard</h3>
+        <ImageSelector cropped bind:selected={beardStyle} images={StickAssets.beardStyles.value}/>
+        <h3>Long Beard</h3>
+        <ImageSelector cropped bind:selected={longbeardStyle} images={StickAssets.longbeardStyles.value}/>
         <ColorSelector bind:selected={facialHairColor} colors={StickAssets.facialHairColors}/>
       </div>
     </AssetUpload>
@@ -355,9 +371,9 @@ onMount(async () => {
   position: relative;
   min-width: 0;
 }
-.controls > * {
+/* .controls > * {
   overflow: hidden;
-}
+} */
 .stick-option {
   border: 1px solid #666;
   border-radius: 5px;
