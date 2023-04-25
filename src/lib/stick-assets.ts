@@ -84,6 +84,7 @@ const hatColors = [
   '#4D4D4C',
   '#E4E4E3',
 ]
+const glassesColors = hatColors
 const mockBase = `${base}/stick-assets`
 const bodies = fileList(`${mockBase}/Bodies/body`)
 const heads = fileList(`${mockBase}/Heads/head`)
@@ -176,6 +177,8 @@ const Assets = {
   longbeardStyles: createLoader(() => fetchList(basePath, 'Facial Hairs', 'longbeard')),
   facialHairColors: facialHairColors,
   glasses: createLoader(() => fetchList(basePath, 'Glasses', 'glasses')),
+  glassesMasks: createLoader(() => fetchList(basePath, 'Glasses', 'maskglasses')),
+  glassesColors: glassesColors,
   accessories: createLoader(() => fetchList(basePath, 'Accessories', 'accessory')),
   hats: createLoader(() => fetchList(basePath, 'Hats', 'hat')),
   hatMasks: createLoader(() => fetchList(basePath, 'Hats', 'maskhat')),

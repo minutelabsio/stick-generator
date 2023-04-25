@@ -14,7 +14,7 @@ const mockList = {
     'hair-02b.png'
   ]),
   'Facial Hairs': fileList('beard').concat(fileList('mustache'), fileList('longbeard')),
-  Glasses: fileList('glasses', 2),
+  Glasses: fileList('glasses', 5).concat(fileList('maskglasses', 5)),
   Accessories: fileList('accessory', 3),
   Hats: fileList('hat').concat(fileList('maskhat', 3))
 }

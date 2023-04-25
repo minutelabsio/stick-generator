@@ -68,18 +68,23 @@ async function draw(Draw, props){
 
   const [
     headMask,
+    glassesMask,
     longbeardMask,
     hairFrontMask,
     hairBackMask,
     hatMask
   ] = await Promise.all([
     loadImage(getMaskFile(allHeads[0])),
+    loadImage(getMaskFile(props.glasses)),
     loadImage(getMaskFile(props.longbeardStyle)),
     loadImage(getMaskFile(hairStyleFront)),
     loadImage(getMaskFile(hairStyleBack)),
     loadImage(getMaskFile(props.hat)),
   ])
 
+  const { canvas: glassesColor}  = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, glassesMask, props.glassesColor)
+  })
   const { canvas: skinColor}  = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, headMask, props.skinColor)
   })
@@ -116,6 +121,7 @@ async function draw(Draw, props){
     longbeard,
     hairFrontColor,
     hairFront,
+    glassesColor,
     glasses,
     accessory,
     hatColor,
@@ -145,6 +151,7 @@ let longbeardStyle
 let mustacheStyle
 let facialHairColor
 let glasses
+let glassesColor
 let accessory
 let customImage
 let customImageLayerIndex = 0
@@ -163,6 +170,7 @@ const reset = () => {
   mustacheStyle = undefined
   facialHairColor = transparent
   glasses = undefined
+  glassesColor = transparent
   accessory = undefined
   customImage = undefined
   customImageLayerIndex = 0
@@ -215,6 +223,7 @@ $: (async (ready, dataEntry, StickAssets) => {
       mustacheStyle,
       facialHairColor,
       glasses,
+      glassesColor,
       accessory,
       customImage,
       customImageLayerIndex
@@ -336,6 +345,7 @@ onMount(async () => {
       <div class="stick-option">
         <h3>Glasses</h3>
         <ImageSelector cropped bind:selected={glasses} images={StickAssets.glasses.value}/>
+        <ColorSelector bind:selected={glassesColor} colors={StickAssets.glassesColors}/>
       </div>
     </AssetUpload>
     <AssetUpload category="Accessories" onUpload={() => refreshAssets('accessories')}>
