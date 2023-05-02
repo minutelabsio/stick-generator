@@ -78,6 +78,10 @@ $: updateImages(images, cropped)
   transition: filter 0.15s ease;
   background: white;
 }
+.carousel-item img {
+  height: fit-content;
+  align-self: center;
+}
 .carousel-item:hover,
 .carousel-item.selected {
   filter: brightness(1.25) saturate(1);
