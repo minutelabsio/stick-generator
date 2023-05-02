@@ -79,7 +79,7 @@ $: updateImages(images, cropped)
   background: white;
 }
 .carousel-item img {
-  height: fit-content;
+  height: intrinsic;
   align-self: center;
 }
 .carousel-item:hover,
