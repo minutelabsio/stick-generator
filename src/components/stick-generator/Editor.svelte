@@ -90,7 +90,7 @@
             {#each Object.entries(selected) as [key, value]}
               <tr>
                 <td class="px-4 py-1">{key}</td>
-                {#if key.includes('Hair') || key.includes('hobby')}
+                {#if key.includes('Hair') || key.includes('hobby') || key.includes('Name')}
                 <td class="px-4 py-1"><strong>{value}</strong></td>
                 {:else}
                 <td class="px-4 py-1">{value}</td>
