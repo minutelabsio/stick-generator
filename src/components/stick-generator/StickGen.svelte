@@ -82,6 +82,9 @@ async function draw(Draw, props){
     loadImage(getMaskFile(props.hat)),
   ])
 
+  const { canvas: framesColor } = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, glasses, props.framesColor)
+  })
   const { canvas: glassesColor}  = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, glassesMask, props.glassesColor)
   })
@@ -122,7 +125,8 @@ async function draw(Draw, props){
     hairFrontColor,
     hairFront,
     glassesColor,
-    glasses,
+    // glasses,
+    framesColor,
     accessory,
     hatColor,
     hat,
@@ -152,6 +156,7 @@ let mustacheStyle
 let facialHairColor
 let glasses
 let glassesColor
+let framesColor
 let accessory
 let customImage
 let customImageLayerIndex = 0
@@ -171,6 +176,7 @@ const reset = () => {
   facialHairColor = transparent
   glasses = undefined
   glassesColor = transparent
+  framesColor = transparent
   accessory = undefined
   customImage = undefined
   customImageLayerIndex = 0
@@ -223,6 +229,7 @@ $: (async (ready, dataEntry, StickAssets) => {
       mustacheStyle,
       facialHairColor,
       glasses,
+      framesColor,
       glassesColor,
       accessory,
       customImage,
@@ -345,6 +352,9 @@ onMount(async () => {
       <div class="stick-option">
         <h3>Glasses</h3>
         <ImageSelector cropped bind:selected={glasses} images={StickAssets.glasses.value}/>
+        <h4>Frames Color</h4>
+        <ColorSelector bind:selected={framesColor} colors={StickAssets.glassesColors}/>
+        <h4>Lenses Color</h4>
         <ColorSelector bind:selected={glassesColor} colors={StickAssets.glassesColors}/>
       </div>
     </AssetUpload>
@@ -380,6 +390,8 @@ onMount(async () => {
 .controls {
   position: relative;
   min-width: 0;
+  max-height: 1000px;
+  overflow-y: scroll;
 }
 /* .controls > * {
   overflow: hidden;
