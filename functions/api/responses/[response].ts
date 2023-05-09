@@ -8,7 +8,7 @@ const MOCK_ITEMS = [
   {
     'Timestamp': '3/14/2023 11:38:10',
     'Email Address': 'well.caffeinated@gmail.com',
-    'Favorite thing': 'Option 2',
+    'Hobby thing': 'Option 2',
     'Likeness of you': 'https://drive.google.com/open?id=1CVb4vbdHWoXNToMBsj1y7DwAjUfu-5Lb',
     'Filename': 'download20210605003031 - Jasper Palfree.png',
     'stickProps': {

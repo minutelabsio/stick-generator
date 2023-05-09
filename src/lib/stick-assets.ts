@@ -83,6 +83,7 @@ const hatColors = [
   '#80807F',
   '#4D4D4C',
   '#E4E4E3',
+  '#000000',
 ]
 const glassesColors = hatColors
 const mockBase = `${base}/stick-assets`
