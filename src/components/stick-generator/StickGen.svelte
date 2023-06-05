@@ -120,14 +120,14 @@ async function draw(Draw, props){
     beard,
     mustache,
     head,
-    longbeardColor,
-    longbeard,
     hairFrontColor,
     hairFront,
     glassesColor,
     // glasses,
     framesColor,
     accessory,
+    longbeardColor,
+    longbeard,
     hatColor,
     hat,
   ]
@@ -185,7 +185,12 @@ const reset = () => {
 const withDefaults = (obj, Assets) => {
   if (!dataEntry.stickProps){ return obj }
   for (const key of Object.keys(obj)){
-    obj[key] = obj[key] === undefined ? dataEntry?.stickProps[key] : obj[key]
+    if (obj[key] === transparent){
+      obj[key] = dataEntry?.stickProps[key] || transparent
+    }
+    if (obj[key] === undefined){
+      obj[key] = dataEntry?.stickProps[key]
+    }
   }
   if (!obj.body){
     obj.body = randomSelection(Assets.bodies)
