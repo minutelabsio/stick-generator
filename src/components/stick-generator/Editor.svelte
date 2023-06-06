@@ -47,6 +47,11 @@
       throw new Error(msg)
     }
     selected = data
+    const index = items.findIndex(item => item.id = selected.id)
+    if (index === -1){
+      throw new Error('Could not find item in list. Tell jasper.')
+    }
+    items[index] = selected
     items = items.concat([])
   }
 
@@ -101,7 +106,7 @@
         </table>
         <label class="done-label cursor-pointer label">
           <span class="label-text">done?</span>
-          <input type="checkbox" checked={selected.done} class="checkbox checkbox-success" />
+          <input type="checkbox" bind:checked={selected.done} class="checkbox checkbox-success" />
         </label>
       </div>
       <StickGen prefix={response} dataEntry={selected} onSaved={onSaved} />
