@@ -83,9 +83,9 @@ const hatColors = [
   '#80807F',
   '#4D4D4C',
   '#E4E4E3',
-  '#000000',
+  '#1a1a1a',
 ]
-const glassesColors = hatColors
+const glassesColors = hatColors.concat(['#FCF4F0'])
 const mockBase = `${base}/stick-assets`
 const bodies = fileList(`${mockBase}/Bodies/body`)
 const heads = fileList(`${mockBase}/Heads/head`)
