@@ -95,6 +95,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
   try {
     const { response } = params
     const filename = decodeURIComponent(response as string)
+    if (env.mock) {
+      const updates = await request.json()
+      if (!Array.isArray(updates)){
+        return setCache(new Response('Bad Data from client', { status: 400 }))
+      }
+      const data = MOCK_ITEMS
+      applyUpdates(data, updates)
+      return setCache(new Response(JSON.stringify(MOCK_ITEMS)))
+    }
     const kv = env.STICK_FIGURE_DATA
     const data = await kv.get(`${filename}`, 'json')
     if (data === null) {
