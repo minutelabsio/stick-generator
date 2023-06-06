@@ -8,6 +8,15 @@ export function downloadCanvasImage(canvas, filename = 'stick-figure', timestamp
 }
 
 const imageCache = new Map()
+
+// remove item from cache
+export function removeFromCache(name){
+  const keys = Array.from(imageCache.keys()).filter(key => key.includes(name))
+  for (let key of keys){
+    imageCache.delete(key)
+  }
+}
+
 export function loadImage(src){
   if (!src){ return null }
   if (imageCache.has(src)){ return imageCache.get(src) }

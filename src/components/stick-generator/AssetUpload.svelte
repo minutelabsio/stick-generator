@@ -1,6 +1,7 @@
 <script lang="ts">
   import { addNotification } from '$lib/notifications'
   import { fileToUint8Array } from '$lib/utils'
+  import { removeFromCache } from '$lib/canvas'
 
   export let category
   export let onUpload
@@ -32,11 +33,12 @@
     const files = Array.from(event.dataTransfer.items)
 
     try {
-      // Iterate over the dropped files and upload them to WNFS
+      // Iterate over the dropped files and upload them
       await Promise.all(
         files.map(async item => {
           if (item.kind === 'file') {
             const file: File = item.getAsFile()
+            removeFromCache(file.name)
 
             // If the dropped files aren't images, we don't want them!
             if (!file.type.match('image/*')) {
