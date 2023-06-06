@@ -65,10 +65,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     }
     const filename = parsePath(params.assetpath)
     const bucket = env.STICK_FIGURES_ASSETS
-    const obj = await bucket.head(`assets/${filename}`)
-    if (obj){
-      return setCache(new Response(`File already exists with the name ${filename}`, { status: 400 }))
-    }
+    // allow overwrite
+    // const obj = await bucket.head(`assets/${filename}`)
+    // if (obj){
+    //   return setCache(new Response(`File already exists with the name ${filename}`, { status: 400 }))
+    // }
     await bucket.put(`assets/${filename}`, request.body)
     return setCache(new Response('OK'))
   } catch (e) {
