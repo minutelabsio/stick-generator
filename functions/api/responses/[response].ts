@@ -6,6 +6,7 @@ import { setCache } from '../cache'
 
 const MOCK_ITEMS = [
   {
+    'id': '1',
     'Timestamp': '3/14/2023 11:38:10',
     'Email Address': 'well.caffeinated@gmail.com',
     'Hobby thing': 'Option 2',
@@ -26,6 +27,7 @@ const MOCK_ITEMS = [
     }
   },
   {
+    'id': '2',
     'Timestamp': '3/14/2023 11:40:58',
     'Email Address': 'well.caffeinated@gmail.com',
     'Favorite thing': 'Option 3',
