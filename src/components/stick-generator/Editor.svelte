@@ -72,7 +72,7 @@
               on:click={select(item)} class:bg-cyan-900="{selected === item}"
               class="flex items-center justify-start gap-2 font-bold text-sm text-base-content hover:text-base-100 bg-base-100 hover:bg-base-content ease-in-out duration-[250ms]"
             >
-            {item.stickProps ? "✅ " : ""}
+            {item.done ? "✅ " : item.stickProps ? "🖌️ " :""}
             {item['Email Address']}
             </button>
           </li>
@@ -83,7 +83,7 @@
   <div class="drawer-content flex flex-col">
     <div class="px-4">
       {#if response && selected}
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-3 gap-4">
         <img class="py-4" src={`/api/likeness/${response}/${selected.Filename}`} width="620" alt="likeness image"/>
         <table class="table-auto">
           <tbody>
@@ -99,6 +99,10 @@
             {/each}
           </tbody>
         </table>
+        <label class="done-label cursor-pointer label">
+          <span class="label-text">done?</span>
+          <input type="checkbox" checked={selected.done} class="checkbox checkbox-success" />
+        </label>
       </div>
       <StickGen prefix={response} dataEntry={selected} onSaved={onSaved} />
       {/if}
@@ -107,6 +111,9 @@
 </div>
 
 <style>
+  .done-label {
+    width: 5em;
+  }
   .drawer-side {
     max-height: 100vh;
     min-width: 340px;
