@@ -1,11 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte"
   import StickGen from "./StickGen.svelte"
+  import _cloneDeep from "lodash/cloneDeep"
 
   let responses = []
   let response = ''
   let selected = null
   let items = []
+  let busy = false
 
   onMount(async () => {
     const res = await fetch('/api/responses')
@@ -17,6 +19,7 @@
   })
 
   const select = (item) => () => {
+    if (busy){ return }
     selected = item
   }
 
@@ -29,10 +32,10 @@
     items = await res.json()
   }
 
-  const onSaved = async (stickProps) => {
+  const onSaved = async (dataEntry, stickProps) => {
     if (!response){ return }
-    const data = selected
-    selected.stickProps = stickProps
+    const data = _cloneDeep(dataEntry)
+    data.stickProps = stickProps
     const res = await fetch(`/api/responses/${response}`, {
       method: 'POST',
       headers: {
@@ -46,13 +49,13 @@
       const msg = await res.text()
       throw new Error(msg)
     }
-    selected = data
-    const index = items.findIndex(item => item.id = selected.id)
+    const index = items.findIndex(item => item.id === data.id)
     if (index === -1){
       throw new Error('Could not find item in list. Tell jasper.')
     }
-    items[index] = selected
+    items[index] = data
     items = items.concat([])
+    selected = data
   }
 
 </script>
@@ -109,7 +112,7 @@
           <input type="checkbox" bind:checked={selected.done} class="checkbox checkbox-success" />
         </label>
       </div>
-      <StickGen prefix={response} dataEntry={selected} onSaved={onSaved} />
+      <StickGen bind:busy={busy} prefix={response} dataEntry={selected} onSaved={onSaved} />
       {/if}
     </div>
   </div>

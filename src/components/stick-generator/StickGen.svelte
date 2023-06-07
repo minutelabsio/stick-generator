@@ -1,5 +1,6 @@
 <script lang="ts">
 import { onMount } from 'svelte'
+import _cloneDeep from 'lodash/cloneDeep'
 import { createCanvas } from '@wellcaffeinated/view-draw'
 import ImageSelector from './ImageSelector.svelte'
 import ColorSelector from './ColorSelector.svelte'
@@ -26,6 +27,7 @@ let ready = false
 export let prefix
 export let dataEntry
 export let onSaved
+export let busy = false
 
 function randomSelection(choices){
   if (!choices){ return undefined }
@@ -251,9 +253,11 @@ function changeLayer(n){
 }
 
 async function saveImage(){
+  busy = true
   const dataURI = Drawing.canvas.toDataURL()
   try {
-    const id = dataEntry.id
+    const data = _cloneDeep(dataEntry)
+    const id = data.id
     if (!id){
       throw new Error('Could not read id address for this entry')
     }
@@ -269,10 +273,12 @@ async function saveImage(){
       const msg = await res.text()
       throw new Error(msg)
     }
-    await onSaved(stickFigureCfg)
+    await onSaved(data, stickFigureCfg)
     addNotification('Saved Image', 'success')
   } catch (e) {
     addNotification(e.message, 'error')
+  } finally {
+    busy = false
   }
 }
 
