@@ -126,20 +126,20 @@ const assets = {
   hatColors
 }
 
-const getHairId = path => {
+const getLayerId = path => {
   return path.match(/([^/.b]+)b?\.(png|jpe?g)$/)[1]
 }
 
-const isHairBack = path => {
+const isLayerBack = path => {
   return /b\.(png|jpe?g)$/.test(path)
 }
 
-function hairFrontBack(list){
+function layerFrontBack(list){
   const byId = {}
   for (const file of list){
-    const id = getHairId(file)
+    const id = getLayerId(file)
     byId[id] = byId[id] || []
-    if (isHairBack(file)){
+    if (isLayerBack(file)){
       byId[id].push(file)
     } else {
       byId[id].unshift(file)
@@ -170,7 +170,7 @@ const Assets = {
   bodies: createLoader(() => fetchList(basePath, 'Bodies', 'body')),
   heads: createLoader(() => fetchList(basePath, 'Heads', 'head')),
   headMasks: createLoader(() => fetchList(basePath, 'Heads', 'maskhead')),
-  hairStyles: createLoader(async () => hairFrontBack(await fetchList(basePath, 'Hairs', 'hair'))),
+  hairStyles: createLoader(async () => layerFrontBack(await fetchList(basePath, 'Hairs', 'hair'))),
   hairColors: hairColors,
   skinColors: skinColors,
   beardStyles: createLoader(() => fetchList(basePath, 'Facial Hairs', 'beard')),
@@ -181,8 +181,8 @@ const Assets = {
   glassesMasks: createLoader(() => fetchList(basePath, 'Glasses', 'maskglasses')),
   glassesColors: glassesColors,
   accessories: createLoader(() => fetchList(basePath, 'Accessories', 'accessory')),
-  hats: createLoader(() => fetchList(basePath, 'Hats', 'hat')),
-  hatMasks: createLoader(() => fetchList(basePath, 'Hats', 'maskhat')),
+  hats: createLoader(async () => layerFrontBack(await fetchList(basePath, 'Hats', 'hat'))),
+  // hatMasks: createLoader(() => fetchList(basePath, 'Hats', 'maskhat')),
   hatColors: hatColors,
   async getAll(): Promise<any> {
     const entries = await Promise.all(

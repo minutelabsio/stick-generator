@@ -41,6 +41,7 @@ async function draw(Draw, props){
   const { ctx } = Draw.offcanvas
   const { width, height } = ctx.canvas
   const [hairStyleFront, hairStyleBack] = Array.isArray(props.hairStyle) ? props.hairStyle : [props.hairStyle]
+  const [hatFrontPath, hatBackPath] = Array.isArray(props.hat) ? props.hat : [props.hat]
   const allHeads = await StickAssets.heads.value
   const [
     body,
@@ -52,7 +53,8 @@ async function draw(Draw, props){
     longbeard,
     glasses,
     accessory,
-    hat,
+    hatFront,
+    hatBack,
     custom
   ] = await Promise.all([
     loadImage(props.body),
@@ -64,7 +66,8 @@ async function draw(Draw, props){
     loadImage(props.longbeardStyle),
     loadImage(props.glasses),
     loadImage(props.accessory),
-    loadImage(props.hat),
+    loadImage(hatFrontPath),
+    loadImage(hatBackPath),
     loadImage(props.customImage)
   ])
 
@@ -74,14 +77,16 @@ async function draw(Draw, props){
     longbeardMask,
     hairFrontMask,
     hairBackMask,
-    hatMask
+    hatFrontMask,
+    hatBackMask,
   ] = await Promise.all([
     loadImage(getMaskFile(allHeads[0])),
     loadImage(getMaskFile(props.glasses)),
     loadImage(getMaskFile(props.longbeardStyle)),
     loadImage(getMaskFile(hairStyleFront)),
     loadImage(getMaskFile(hairStyleBack)),
-    loadImage(getMaskFile(props.hat)),
+    loadImage(getMaskFile(hatFrontPath)),
+    loadImage(getMaskFile(hatBackPath)),
   ])
 
   const { canvas: framesColor } = offscreenCanvas(width, height, (ctx) => {
@@ -108,13 +113,18 @@ async function draw(Draw, props){
   const { canvas: longbeardColor } = offscreenCanvas(width, height, (ctx) => {
     drawColorMask(ctx, longbeardMask, props.facialHairColor)
   })
-  const { canvas: hatColor } = offscreenCanvas(width, height, (ctx) => {
-    drawColorMask(ctx, hatMask, props.hatColor)
+  const { canvas: hatFrontColor } = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, hatFrontMask, props.hatColor)
+  })
+  const { canvas: hatBackColor } = offscreenCanvas(width, height, (ctx) => {
+    drawColorMask(ctx, hatBackMask, props.hatColor)
   })
 
   clearCanvas(ctx)
 
   let layers = [
+    hatBackColor,
+    hatBack,
     hairBackColor,
     hairBack,
     body,
@@ -130,8 +140,8 @@ async function draw(Draw, props){
     accessory,
     longbeardColor,
     longbeard,
-    hatColor,
-    hat,
+    hatFrontColor,
+    hatFront,
   ]
 
   layers.splice(-props.customImageLayerIndex - 1, 0, custom)
