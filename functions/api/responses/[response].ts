@@ -80,7 +80,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
 
 function applyUpdates(original, updates : Array<any>){
   const todo = updates.slice(0)
-  return original.map(entry => {
+  const result = original.map(entry => {
     if (!todo.length){ return entry }
     const idx = todo.findIndex(o => o.id === entry.id)
     if (idx < 0){ return entry }
@@ -88,6 +88,7 @@ function applyUpdates(original, updates : Array<any>){
     todo.splice(idx, 1)
     return Object.assign({}, entry, update)
   })
+  return result.concat(todo.filter(o => o.id))
 }
 
 // save data
@@ -115,7 +116,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
     }
 
     const updatedData = applyUpdates(data, updates)
-
+    if (!updatedData || !Array.isArray(updatedData) || !updatedData.length){
+      return setCache(new Response('Problem updating', { status: 500 }))
+    }
     const text = JSON.stringify(updatedData)
     await kv.put(`${filename}`, text)
 
