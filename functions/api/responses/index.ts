@@ -6,6 +6,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
   }
 
   try {
+    const kv = env.STICK_FIGURE_DATA
+    // get list from kv
+    const data = await kv.list()
+    const kvFilenames = data.keys.map(key => key.name)
     const bucket = env.STICK_FIGURES
     const responses = await bucket.list({ prefix: 'responses/' })
     if (!responses.objects.length) {
@@ -14,6 +18,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
     const filenames = responses.objects.map(
       obj => obj.key.replace('responses/', '')
     ).filter(Boolean)
+    filenames.push.apply(filenames, kvFilenames)
     return setCache(new Response(JSON.stringify(filenames)))
   } catch (e) {
     return setCache(new Response(e.message, { status: 500 }))

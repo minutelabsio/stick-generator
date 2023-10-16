@@ -23,7 +23,7 @@
     await initialize()
   }
 
-  init()
+  // init()
 </script>
 
 <svelte:head>

@@ -101,13 +101,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
         return setCache(new Response('Bad Data from client', { status: 400 }))
       }
       const data = MOCK_ITEMS
-      applyUpdates(data, updates)
-      return setCache(new Response(JSON.stringify(MOCK_ITEMS)))
+      return setCache(new Response(JSON.stringify(applyUpdates(data, updates))))
     }
     const kv = env.STICK_FIGURE_DATA
-    const data = await kv.get(`${filename}`, 'json')
+    let data = await kv.get(`${filename}`, 'json')
     if (data === null) {
-      return setCache(new Response('Not found', { status: 404 }))
+      data = []
     }
 
     const updates = await request.json()
