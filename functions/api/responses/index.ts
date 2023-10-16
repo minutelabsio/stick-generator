@@ -1,4 +1,5 @@
 import { setCache } from '../cache'
+import _uniq from 'lodash/uniq'
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
   if (env.mock) {
@@ -19,7 +20,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
       obj => obj.key.replace('responses/', '')
     ).filter(Boolean)
     filenames.push.apply(filenames, kvFilenames)
-    return setCache(new Response(JSON.stringify(filenames)))
+    return setCache(new Response(JSON.stringify(_uniq(filenames))))
   } catch (e) {
     return setCache(new Response(e.message, { status: 500 }))
   }
