@@ -1,0 +1,273 @@
+---
+status: planned
+created: 2026-09-23
+updated: 2026-09-23
+summary: "Follower intake via one expiring invite link per batch, replacing Google Forms. Includes the spam and abuse controls."
+---
+
+# v2 public intake (batch invite links)
+
+This replaces the Google Form, the Apps Script hook, and the CSV + photo import.
+Followers submit their answers and photo directly into v2 through an invite link that
+expires.
+
+Architecture context: [v2-architecture.md](./v2-architecture.md). Build phase:
+[Phase 3](./v2-phased-plan.md#phase-3-batch-invites-and-public-intake).
+
+## Decisions so far
+
+- **Invite only.** There is no open or public sign-up.
+- **One link per batch.** Every subscriber in a batch gets the same link or code.
+  A batch is a v2 group.
+- **Hard close.** When the window ends, the link stops working. Anyone who missed it
+  emails the team, and the team adds them by hand.
+- **Questions are TBD.** They are configured per batch, so they can change without a
+  deploy. Name, email, photo, and consent are built in and always asked.
+
+## Flow
+
+```
+Team                                        Subscriber
+────                                        ──────────
+1. Create batch. Set questions, close date,
+   expected size, optional email allowlist
+2. Copy the batch link
+3. Send it in one email / post to
+   subscribers via the usual channel ──────────► 4. Opens https://<host>/join#<code>
+                                                    (or goes to /join and types the code)
+                                                 5. Enters name + email, answers questions,
+                                                    picks and crops a photo, ticks consent
+                                                 6. Submits and sees "Got it!"
+7. Entries appear in the batch queue as "new"
+8. Batch closes at the set time ─────────────► Late visitors see: "This batch has closed.
+                                                    Email <contact> if you missed it."
+9. Late emails → team adds a manual entry
+   (or briefly reopens the batch)
+```
+
+## What a shared link changes
+
+A per-person link proves who is submitting. A shared link does not. Once it is sent, it
+is effectively **semi-public until it closes**: it can be forwarded, screenshotted, or
+posted somewhere. The design accepts that, and relies on these instead:
+
+1. **A short window.** The link only works between `opens_at` and `closes_at`.
+2. **Human-scale caps.** A batch has an expected size. Submissions stop at a hard cap
+   set just above it.
+3. **Bot friction.** Turnstile and rate limits apply to every submit.
+4. **Rotation.** If the link leaks, the team rotates the code. The old link dies at once,
+   and the new one goes out to subscribers.
+5. **Nothing overwrites anything.** A submission can only *create* an entry. It can
+   never edit or read an existing one, so a stranger holding the link can add junk but
+   cannot touch real subscribers' data.
+6. **Optional allowlist** (see below). Only emails on the subscriber list are accepted.
+
+Because of point 5, followers **cannot edit a submission** once sent. If they need a
+change, they email the team, the same as for late entries. This keeps the public side
+write-once and removes a whole class of "who is allowed to edit this" problems.
+
+## The batch code
+
+- 12 characters from an unambiguous alphabet (no `0/O/1/I/L`), shown grouped as
+  `XXXX-XXXX-XXXX`, which is about 58 bits. Guessing is hopeless behind the rate limit,
+  and a person can still type it.
+- The link is `https://<host>/join#<code>`. The fragment keeps the code out of server
+  logs and `Referer` headers. Email link scanners that pre-open the link do nothing,
+  because **no GET request ever changes state**. The join page strips the fragment from
+  the address bar, then sends the code in a header. `/join` without a code shows a
+  "type your code" box.
+- The code is stored in plain text, because the team needs to copy the link again at
+  any time and it is already shared with many people. Its protection is expiry and
+  rotation, not secrecy at rest.
+- **Rotate** creates a new code and invalidates the old one immediately. Entries
+  already submitted are unaffected.
+
+## Batch settings (on the group)
+
+| Setting | Purpose | Default |
+|---------|---------|---------|
+| `opens_at` / `closes_at` | Submission window. Required, because a batch cannot be opened without a close date | now / +14 days |
+| `max_submissions` | Hard cap. The page shows "This batch is full, email us" once it is reached | expected size × 1.25, rounded up |
+| `allowlist` (on/off) + uploaded `name,email` list | Only accept emails on the list | off |
+| `questions` | Ordered list of `{ id, label, help?, type: text\|textarea\|choice, options?, required, maxLength, highlight }` | empty (TBD) |
+| `consent_text` | Shown next to the required checkbox | default text (needs Q5 answered) |
+| `contact_email` | Shown in the closed, full, and error messages | team default |
+
+**Extend** moves `closes_at` later. **Close now** sets it to the current time. Reopening
+a closed batch is just extending it.
+
+## Email allowlist (optional, per batch)
+
+If the team has the subscriber list for a batch, it can turn this on:
+
+- Upload or paste `name,email`. Emails are normalised (trimmed, lower-cased).
+- A submission whose email is not on the list is rejected with a neutral message:
+  "We couldn't match that email to this batch. Use the email your invitation was sent to,
+  or contact <contact>."
+- The list also gives a **"not yet submitted"** view, so the team can chase people
+  before the window closes.
+- Limitation: it checks that the email is *on the list*, not that the person *owns* it.
+  Someone holding the link and knowing a subscriber's email could submit as them. That
+  gets caught by the duplicate check below. Proving ownership would need an emailed
+  confirmation code. That is listed as an optional later step, not planned by default.
+
+## Duplicates
+
+With a shared link, the same person may submit twice, or someone may submit using
+another person's email.
+
+- Each submission always creates a **new entry**. Nothing is merged or overwritten.
+- If the email already exists in the batch, the new entry is flagged
+  `duplicate_of = <earlier entry id>`. The queue shows a "Possible duplicate" badge with
+  a side-by-side view: **keep newer**, **keep older**, or **keep both**. The discarded
+  entry becomes `skipped`, not deleted.
+- The follower is told nothing different, to avoid confirming which emails are
+  registered.
+
+## Spam and abuse controls
+
+| # | Control | Stops | Where |
+|---|---------|-------|-------|
+| 1 | **Submission window** (`opens_at`/`closes_at`), enforced on the server | the link staying useful after the batch | submit handler |
+| 2 | **Hard submission cap** per batch | a leaked link being used to flood the batch | submit handler: one conditional `INSERT … SELECT … WHERE (count) < cap` statement, because D1 has no interactive transactions |
+| 3 | **Rotate code** | a known leak. The old link dies immediately | team UI |
+| 4 | **Write-once public API**. It only creates entries and takes no entry, group, or R2 key parameters. The batch comes from the code | reading or editing anyone else's submission. IDOR-style bugs | public router |
+| 5 | **Cloudflare Turnstile** on every submit, verified server-side (`siteverify`, checking `hostname` and `action`). Always on, because the link is shared | scripted or bulk submissions | submit handler |
+| 6 | **Per-IP rate limits** on `/api/public/*` (Workers Rate Limiting binding): a loose limit for code checks, a tight one for submits (e.g. 5 / 60 s). Wrong codes count too | code guessing and floods | middleware |
+| 7 | **Optional email allowlist** | people outside the subscriber list | submit handler |
+| 8 | **Duplicate flagging** by email | resubmits and impersonation going unnoticed | submit handler + queue |
+| 9 | **Hard size limits**: photo ≤ 5 MB after client processing (rejected from `Content-Length` before the body is read). Answers checked against the batch's question schema with max lengths | storage and cost abuse | submit handler |
+| 10 | **Photo type check by magic bytes** (JPEG/PNG/WebP only). Stored under a server-chosen key and served to the team with the stored `Content-Type` and `X-Content-Type-Options: nosniff` | disguised files and content-sniffing tricks | submit handler + `/api/files` |
+| 11 | **Strict isolation from the team app**: Zero Trust bypass for *only* `/join` and `/api/public/*`. Every other route still requires the Access JWT, with a test that enumerates routes to prove it | a misconfigured bypass exposing team endpoints | Access + Hono |
+| 12 | **Page hardening**: `Referrer-Policy: no-referrer`, a tight CSP (self + `challenges.cloudflare.com`), `X-Frame-Options: DENY`, no third-party scripts | code leakage, clickjacking, and injected scripts | join page responses |
+| 13 | **Answers are plain text only**, rendered as text in the team UI and never as HTML | stored XSS aimed at designers | team UI |
+| 14 | **Bulk clean-up**: select entries in the queue by submit time and mark them `skipped` | clearing out a burst of junk after a leak | team UI |
+
+Notes:
+
+- **#2 and #6.** The Workers rate limiter is per-location and approximate, so it works as
+  a flood guard, not an exact quota. The batch cap (#2) is the real ceiling, and it is
+  exact because it is checked in D1.
+- **#11** matters most. A path-based bypass policy can be mistyped. That is why the app
+  checks the Access JWT itself on every non-public route, and why a test enforces it.
+- **Abuse visibility.** Each entry records the submit time and a salted hash of the
+  client IP (`submit_ip_hash`), so a burst from one source is easy to spot and clear
+  with #14. The hash is dropped when photos are purged.
+
+## Photo handling (in the follower's browser)
+
+1. `<input type="file" accept="image/*">`, which also opens the camera on mobile.
+   iOS delivers HEIC photos as JPEG through this input.
+2. Decode with `createImageBitmap`. On failure, show "We couldn't read that image. Try a
+   JPEG or PNG."
+3. A simple crop step (drag or zoom a portrait frame around the face) gives designers a
+   consistent framing.
+4. Downscale to at most 1600 px on the long edge, then **re-encode to JPEG via canvas**.
+   This strips all EXIF data, including GPS location. The server still enforces #9 and
+   #10, because clients can't be trusted.
+5. The photo is uploaded with the submit. The server never sends photos back to the
+   public side.
+
+## Consent and privacy
+
+- A required checkbox with the batch's consent text: what the photo is used for, who
+  sees it, and how long it's kept.
+- Each entry stores `consent_at` and `consent_version`.
+- "Purge photos" on archived batches deletes likeness objects and IP hashes, and clears
+  the allowlist. How long to keep things is open question Q5.
+
+## Data model
+
+Changes to [v2-architecture.md](./v2-architecture.md#data-model-d1). They fold into
+`0001_init.sql`.
+
+```sql
+-- groups (= batches): intake settings
+--   join_code        TEXT UNIQUE          -- current code; NULL = intake disabled (manual-only batch)
+--   opens_at         TEXT
+--   closes_at        TEXT
+--   max_submissions  INTEGER
+--   allowlist_on     INTEGER NOT NULL DEFAULT 0
+--   questions        TEXT                 -- JSON, see Batch settings
+--   consent_text     TEXT
+--   contact_email    TEXT
+
+-- entries: submission metadata
+--   status           new | in_progress | done | skipped
+--   submitted_at     TEXT                 -- NULL for manual / v1 entries
+--   consent_at       TEXT
+--   consent_version  TEXT
+--   duplicate_of     TEXT REFERENCES entries(id)
+--   submit_ip_hash   TEXT
+
+CREATE TABLE batch_allowlist (
+  group_id  TEXT NOT NULL REFERENCES groups(id),
+  email     TEXT NOT NULL,                 -- normalised
+  name      TEXT,
+  PRIMARY KEY (group_id, email)
+);
+
+CREATE INDEX idx_entries_group_email ON entries (group_id, lower(email));
+```
+
+The v1 migration builds a `questions` list from each old CSV's headers, so old batches
+display the same way as new ones.
+
+## API
+
+Public (Zero Trust bypass, code in the `X-Join-Code` header):
+
+| Method + path | Purpose |
+|---------------|---------|
+| `GET /api/public/batch` | Validates the code. Returns `{ batchName, state: open\|not_yet_open\|closed\|full, closesAt, questions, consentText, contactEmail }`. A wrong code returns the same shape as `closed`, so it gives nothing away |
+| `POST /api/public/submission` | Multipart: `name`, `email`, `answers` (JSON), `photo`, `consent`, `turnstileToken`. Creates one entry. Returns `{ ok: true }` |
+
+Team (Access):
+
+| Method + path | Purpose |
+|---------------|---------|
+| `PATCH /api/groups/:id` | Batch settings (window, cap, questions, consent, contact, allowlist toggle) |
+| `POST /api/groups/:id/rotate-code` | New code. The old one is invalid immediately |
+| `PUT /api/groups/:id/allowlist` · `GET …/allowlist?status=pending` | Replace the list. See who hasn't submitted |
+| `POST /api/entries/:id/resolve-duplicate` | Keep newer, keep older, or keep both |
+
+## Team UI
+
+- **Batch → Settings**: window, cap, contact, consent, and allowlist upload. There is a
+  **questions** editor (an ordered list, not a form builder) and a **Preview** button
+  that opens the join page in no-submit mode.
+- **Batch → Share**: the link and the code, each with a copy button, a status line
+  ("Open, closes Fri 3 Oct, 41 / 60 submitted"), plus **Extend**, **Close now**, and
+  **Rotate code**.
+- **Queue**: "Possible duplicate" badges and the resolve view. Multi-select to skip
+  entries. With the allowlist on, a "Not yet submitted" list.
+
+## The join page
+
+- A **separate, lightweight Vite entry** (`join.html`) that doesn't ship the team app.
+  It should load fast on mobile and has nothing to leak.
+- It is mobile-first and fits on one screen: batch name, name + email, questions, photo +
+  crop, consent, submit.
+- It has clear states for loading, open, not yet open, closed, full, and submitted.
+  Every closed, full, or error state names the contact email.
+
+## Tests (critical paths only)
+
+- Window and cap: submits before `opens_at` or after `closes_at` are rejected. The cap
+  holds under concurrent submits.
+- Rotation: the old code fails immediately after rotating.
+- Write-once: the public API has no path to read or modify an existing entry.
+  Duplicate submits create a flagged entry and don't overwrite the original.
+- Allowlist: when on, unlisted emails are rejected. When off, any email is accepted.
+- Route guard: every non-public route returns 401/403 without an Access JWT.
+- Upload: oversize photos are rejected before the body is read. Wrong magic bytes are
+  rejected. A failed Turnstile check rejects the submit.
+
+## Open questions
+
+| # | Question | Default if unanswered |
+|---|----------|-----------------------|
+| I1 | ~~Subscriber list source~~ Only needed if the allowlist is used. Any `name,email` CSV works | Resolved |
+| I2 | ~~Open sign-up?~~ No. Invite only | Resolved |
+| I3 | ~~Default questions~~ TBD. Configured per batch | Resolved |
+| I4 | Should the allowlist be on by default for new batches? | Off, turned on per batch when a list is available |
