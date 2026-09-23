@@ -28,8 +28,6 @@ History is part of the documentation here, so keep each step easy to follow.
 - **Commit docs with the change they describe.** When a plan item lands, tick it in
   `docs/planning/v2-phased-plan.md` and bump the frontmatter `updated` (and `status`
   when a whole phase finishes).
-- Check `git status` before committing so generated files don't sneak in. The
-  gitignored ones include `worker-configuration.d.ts`, `.wrangler/`, and `dist/`.
 
 ### Scope
 
@@ -76,8 +74,6 @@ and anything after it, such as a `git commit`, never runs.
   - Test-only bindings (like `TEST_MIGRATIONS`) go in `test/env.d.ts`, on
     `Cloudflare.Env`. That is the type of `env` from `cloudflare:workers`, and it is
     **not** the same interface as the global `Env`.
-- After changing `wrangler.jsonc`, run `pnpm run wrangler:types`. The `dev`, `build`,
-  and `typecheck` scripts do this for you.
 - In the SPA, parse API responses with the zod schemas in `shared/api-schemas.ts`
   (`safeParse`). Don't hand-narrow `unknown`: TypeScript won't carry narrowing through
   aliased conditions. In handlers, tie responses to the same schema type with
@@ -108,8 +104,6 @@ and anything after it, such as a `git commit`, never runs.
 
 - **Thin handlers, fat services.** Routes validate with zod and call a service created
   by a factory that takes its dependencies (e.g. `createEntryService(env.DB)`).
-- **Public vs. team routes.** Everything under `/api` requires Access, except routes
-  registered before the Access middleware in `api/app.ts`.
 - **Shared contracts** (API schemas, figure config, layer order) live in `shared/` and
   are imported by both the Worker and the SPA.
 - **Migrations are additive.** Never edit a shipped migration. Add a new numbered file.
