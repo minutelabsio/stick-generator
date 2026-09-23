@@ -3,6 +3,10 @@ import { HTTPException } from 'hono/http-exception'
 import type { MeResponse } from '../shared/api-schemas'
 import { logger } from './logger'
 import { createAccessAuth, createRemoteAccessKeys } from './middleware/access-auth'
+import { batchRoutes } from './routes/batch-routes'
+import { entryRoutes } from './routes/entry-routes'
+import { fileRoutes } from './routes/file-routes'
+import { libraryRoutes } from './routes/library-routes'
 import type { AccessKeyResolver, AccessUser } from './middleware/access-auth'
 
 export interface AppEnv {
@@ -26,6 +30,10 @@ export function createApp({ resolveAccessKeys = createRemoteAccessKeys() }: AppO
   app.use('*', createAccessAuth(resolveAccessKeys))
 
   app.get('/me', c => c.json({ email: c.var.user.email } satisfies MeResponse))
+  app.route('/batches', batchRoutes)
+  app.route('/entries', entryRoutes)
+  app.route('/library', libraryRoutes)
+  app.route('/files', fileRoutes)
 
   return app
 }
