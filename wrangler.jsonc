@@ -3,7 +3,7 @@
   "name": "stick-generator",
   "main": "api/index.ts",
   "account_id": "847aff3ed9c07c12eae4f4747ae61e8b",
-  "compatibility_date": "2026-09-01",
+  "compatibility_date": "2026-08-22",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
 
