@@ -1,0 +1,5 @@
+# Only these dependencies may run install scripts: esbuild and workerd download
+# their platform binaries (workerd is the local Workers runtime for dev and tests).
+allowBuilds:
+  esbuild: true
+  workerd: true

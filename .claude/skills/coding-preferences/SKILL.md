@@ -6,7 +6,7 @@ description: Jasper's coding conventions for this project (naming, function desi
 # Coding preferences
 
 Source: Jasper's "Coding Preferences" note. Apply these when writing or reviewing code.
-Anything a linter can catch is enforced in `eslint.config.ts`. Run `bun run lint` and
+Anything a linter can catch is enforced in `eslint.config.ts`. Run `pnpm run lint` and
 fix what it reports, rather than suppressing it. The rules below marked **(judgement)**
 cannot be linted, so apply them deliberately.
 
@@ -134,4 +134,4 @@ ask Jasper before adding one.**
 ## Style (lint: `@stylistic`)
 
 No semicolons, single quotes, 2-space indent, and trailing commas on multiline
-literals. `bun run lint:fix` handles formatting.
+literals. `pnpm run lint:fix` handles formatting.

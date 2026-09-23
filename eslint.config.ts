@@ -25,7 +25,7 @@ const RESTRICTED_SYNTAX = [
   { selector: 'TSEnumDeclaration[const=true]', message: 'Use a plain enum (or a union), not const enum.' },
 ] as const
 
-export default defineConfigWithVueTs(
+const config: ReturnType<typeof defineConfigWithVueTs> = defineConfigWithVueTs(
   {
     ignores: ['dist/**', '.wrangler/**', 'node_modules/**', 'worker-configuration.d.ts'],
   },
@@ -100,3 +100,5 @@ export default defineConfigWithVueTs(
     rules: { 'vue/multi-word-component-names': 'off' },
   },
 )
+
+export default config

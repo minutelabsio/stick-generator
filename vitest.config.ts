@@ -3,7 +3,7 @@ import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-worker
 import { defineConfig } from 'vitest/config'
 
 // Only the `test` environment in wrangler.jsonc is safe to run tests against.
-// Default it here so running `vitest` directly behaves the same as `bun run test`.
+// Default it here so running `vitest` directly behaves the same as `pnpm run test`.
 process.env.CLOUDFLARE_ENV ??= 'test'
 
 export default defineConfig({

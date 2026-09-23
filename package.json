@@ -5,16 +5,16 @@
   "type": "module",
   "scripts": {
     "wrangler:types": "wrangler types --env production --strict-vars=false",
-    "dev": "bun run wrangler:types && CLOUDFLARE_ENV=dev vite dev",
-    "dev:init": "bun run db:migrate:local && bun run db:seed:local",
-    "build": "bun run wrangler:types && vue-tsc --build && vite build",
+    "dev": "pnpm run wrangler:types && CLOUDFLARE_ENV=dev vite dev",
+    "dev:init": "pnpm run db:migrate:local && pnpm run db:seed:local",
+    "build": "pnpm run wrangler:types && vue-tsc --build && vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "typecheck": "bun run wrangler:types && vue-tsc --build",
+    "typecheck": "pnpm run wrangler:types && vue-tsc --build",
     "test": "CLOUDFLARE_ENV=test vitest run",
     "test:watch": "CLOUDFLARE_ENV=test vitest",
-    "check": "bun run lint && bun run typecheck && bun run test",
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run test",
     "db:migrate:local": "wrangler d1 migrations apply DB --env dev --local",
     "db:migrate:staging": "wrangler d1 migrations apply DB --env staging --remote",
     "db:migrate:prod": "wrangler d1 migrations apply DB --env production --remote",
@@ -26,14 +26,14 @@
     "hono": "^4.13.8",
     "jose": "^6.2.12",
     "pinia": "^4.0.3",
-    "primeicons": "^8.0.2",
+    "primeicons": "^7.0.0 || ^8.0.0",
     "primevue": "^5.0.1",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.58.0",
+    "@cloudflare/vite-plugin": "^1.40.0",
     "@cloudflare/vitest-pool-workers": "^0.22.0",
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
@@ -50,6 +50,10 @@
     "vite": "^8.3.0",
     "vitest": "^4.1.0",
     "vue-tsc": "^3.3.11",
-    "wrangler": "^4.137.0"
+    "wrangler": "^4.100.0"
+  },
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=24"
   }
 }
