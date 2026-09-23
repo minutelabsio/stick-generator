@@ -23,12 +23,12 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.1",
-    "@primeuix/themes": "^3.0.1",
+    "@primeuix/themes": "^2.0.3",
     "hono": "^4.13.8",
     "jose": "^6.2.12",
     "pinia": "^4.0.3",
-    "primeicons": "^7.0.0 || ^8.0.0",
-    "primevue": "^5.0.1",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.5",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1",
     "zod": "^4.6.5"
