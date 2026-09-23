@@ -1,9 +1,11 @@
 import { ApiError } from '@shared/api-schemas'
+import { JOIN_CODE_HEADER } from '@shared/api-types'
 import type {
   BatchDetail,
   BatchSummary,
   CreateBatchRequest,
   EntryDetail,
+  JoinBatch,
   Library,
   UpdateEntryRequest,
 } from '@shared/api-types'
@@ -38,4 +40,7 @@ export const api = {
   uploadRender: (entryId: string, png: Blob) =>
     request<EntryDetail>(`/api/entries/${entryId}/render`, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: png }),
   getLibrary: () => request<Library>('/api/library'),
+  getJoinBatch: (joinCode: string) => request<JoinBatch>('/api/public/batch', { headers: { [JOIN_CODE_HEADER]: joinCode } }),
+  submitJoin: (joinCode: string, form: FormData) =>
+    request<{ ok: true }>('/api/public/submission', { method: 'POST', headers: { [JOIN_CODE_HEADER]: joinCode }, body: form }),
 }
