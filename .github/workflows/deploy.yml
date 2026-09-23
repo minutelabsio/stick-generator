@@ -1,0 +1,41 @@
+name: Deploy
+
+# Staging:    every push to main          → migrate + deploy --env staging
+# Production: every pushed tag matching v* → migrate + deploy --env production
+#
+# Disabled until setup is finished (see SETUP.md, "Enabling deploys"):
+#   - repo variable DEPLOY_ENABLED = true
+#   - repo secrets CLOUDFLARE_API_TOKEN (Workers Scripts, D1, R2: Edit) and CLOUDFLARE_ACCOUNT_ID
+#   - real D1 database IDs and Access vars in wrangler.jsonc for the target environment
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'staging' }}
+    env:
+      CLOUDFLARE_ENV: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'staging' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun run build
+      # Migrations are additive-only, so applying them before the new code ships is safe.
+      - run: bunx wrangler d1 migrations apply DB --env "$CLOUDFLARE_ENV" --remote
+      # The Vite plugin bakes the selected environment into the build output.
+      - run: bunx wrangler deploy
