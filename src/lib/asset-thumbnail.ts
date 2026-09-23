@@ -1,8 +1,10 @@
+import { LAYERS } from '@shared/figure'
 import type { LibraryAsset } from '@shared/api-types'
 import { createCanvas, get2dContext, loadImage } from './images'
 
 const THUMBNAIL_PADDING = 12
 const MASK_PREVIEW_COLOR = '#d9d9d9'
+const RECOLOURED_LINE_PREVIEW_COLOR = '#2b2b2b'
 const BYTES_PER_PIXEL = 4
 const ALPHA_OFFSET = 3
 
@@ -24,19 +26,26 @@ async function drawCroppedThumbnail(asset: LibraryAsset) {
   if (!firstImage) return ''
 
   const context = get2dContext(createCanvas(firstImage.width, firstImage.height), { willReadFrequently: true })
+  const lineIsRecoloured = hasRecolouredLine(asset)
   images.forEach((image, index) => {
     if (!image) return
     const isMask = index % 2 === 0
-    context.drawImage(isMask ? greyedOut(image) : image, 0, 0)
+    if (isMask) return context.drawImage(filledWith(image, MASK_PREVIEW_COLOR), 0, 0)
+    context.drawImage(lineIsRecoloured ? filledWith(image, RECOLOURED_LINE_PREVIEW_COLOR) : image, 0, 0)
   })
   return cropToContent(context)
 }
 
-function greyedOut(image: HTMLImageElement) {
+// Beards and mustaches are stored in an arbitrary colour and recoloured at render
+// time, so their raw pixels are meaningless in a preview.
+const hasRecolouredLine = (asset: LibraryAsset) =>
+  LAYERS.some(layer => layer.slot === asset.slot && layer.part === 'line' && layer.tint)
+
+function filledWith(image: HTMLImageElement, color: string) {
   const context = get2dContext(createCanvas(image.width, image.height))
   context.drawImage(image, 0, 0)
   context.globalCompositeOperation = 'source-in'
-  context.fillStyle = MASK_PREVIEW_COLOR
+  context.fillStyle = color
   context.fillRect(0, 0, image.width, image.height)
   return context.canvas
 }

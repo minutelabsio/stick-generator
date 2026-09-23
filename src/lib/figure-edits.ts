@@ -15,6 +15,14 @@ const RANDOM_FILL_CHANCE: Record<SlotId, number> = {
   accessory: 0.15,
 }
 
+// Colours applied when a slot is first picked. Palette order is display order, and its
+// first entries (white hair, pale blue frames) make poor starting points.
+const DEFAULT_COLORS: Partial<Record<ColorChannelId, string>> = {
+  hair: '#63503C',
+  glassesFrame: '#1A1A1A',
+  glassesLens: '#FCF4F0',
+}
+
 const pickRandom = <T>(items: readonly T[]) => items[Math.floor(Math.random() * items.length)]
 
 const assetsForSlot = (library: Library, slot: SlotId) => library.assets.filter(asset => asset.slot === slot)
@@ -49,13 +57,13 @@ export function randomFigure(library: Library): FigureConfig {
   return { assets: Object.fromEntries(assetEntries), colors: { ...colors, facialHair: colors.hair } }
 }
 
-// Picking a hat with no hat colour would draw an invisible fill, so start from the palette.
+// An untinted mask would draw as an invisible fill, so picking an asset also picks a colour.
 // Facial hair follows the hair colour, the way people usually look.
 function fillMissingColors(colors: FigureConfig['colors'], channels: ColorChannelId[], library: Library) {
   const missing = channels.filter(channel => !colors[channel])
   const defaults = missing.map((channel) => {
-    const paletteDefault = library.palettes[COLOR_CHANNELS[channel].palette][0]
-    const color = channel === 'facialHair' ? (colors.hair ?? paletteDefault) : paletteDefault
+    const fallback = DEFAULT_COLORS[channel] ?? library.palettes[COLOR_CHANNELS[channel].palette][0]
+    const color = channel === 'facialHair' ? (colors.hair ?? DEFAULT_COLORS.hair) : fallback
     return [channel, color] as const
   })
   return { ...colors, ...Object.fromEntries(defaults) }
