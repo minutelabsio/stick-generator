@@ -1,5 +1,5 @@
 ---
-status: planned
+status: partial
 created: 2026-09-23
 updated: 2026-09-23
 summary: "Phased build plan for v2, from scaffold to cutover, with exit criteria per phase."
@@ -26,21 +26,28 @@ P0 Groundwork ─► P1 Assets ─► P2 Editor ─► P3 Batch intake ─► P4
 
 **Goal:** an empty but real v2 that deploys, authenticates, and has a schema.
 
-- [ ] Resolve open question Q1 (framework) from the architecture doc. Point the existing
-      Zero Trust Access application at the v2 hostname.
-- [ ] Scaffold a fresh project on this branch. Remove the Webnative template, SvelteKit,
-      Pages Functions, `deploy.sh`, and unused deps. Keep `static/stick-assets/` only as
-      dev seed material.
-- [ ] Move `MM Mugs 1 - Stick Figure Assets.psd` out of `static/`. Use Git LFS or the
-      design drive, so it is no longer deployed publicly.
-- [ ] `wrangler.toml`: `main = api/index.ts`, static assets with SPA fallback,
+- [x] Q1 (framework): went with the default, Vue 3 + PrimeVue + Pinia.
+- [x] Scaffold a fresh project on this branch. The v1 code is removed. v1 layer PNGs are
+      kept as dev seed data in `seed/stick-assets/`, and the mug script and ICC profile
+      in `scripts/mugs/`.
+- [x] The master PSD is no longer in the tree or deployed. It remains in `main`'s
+      history. Where it should live long-term (Git LFS or design drive) is still open.
+- [x] `wrangler.jsonc`: `main = api/index.ts`, static assets with SPA fallback,
       `run_worker_first = ["/api/*"]`, `workers_dev = false`, observability logs, and
-      `dev` / `staging` / `production` envs each with their own D1 plus R2 bindings.
-- [ ] Hono app with Access JWT middleware (dev bypass flag only in the `dev` env) and `GET /api/me`.
-- [ ] `migrations/0001_init.sql` holds the tables from the architecture doc.
-      `scripts/seed-dev.sql` holds a demo group and entries. `dev:init` applies both locally.
-- [ ] GitHub Actions: lint, typecheck, and test on push. `main` deploys to staging, `v*` tags deploy to production.
-- [ ] `SETUP.md`: prerequisites, `.dev.vars`, first run, and how to add the v2 hostname and the `/join` bypass to the Zero Trust Access app, and how to set up Turnstile keys.
+      `dev` / `test` / `staging` / `production` envs each with their own D1 + R2 bindings.
+- [x] Hono app with Access JWT verification (dev bypass needs the dev var *and*
+      localhost) and `GET /api/me`. A route-guard test fails on any unlisted public route.
+- [x] `migrations/0001_init.sql` holds all tables from the architecture and intake docs,
+      with CHECK constraints. `scripts/seed-dev.sql` holds palettes plus a demo batch.
+      `dev:init` applies both locally.
+- [x] Tooling: pnpm, ESLint encoding the coding preferences (`--max-warnings 0`),
+      `vue-tsc --build` across app/worker/test projects, and Vitest in the Workers runtime.
+- [x] GitHub Actions: CI (lint, typecheck, test, build) on every push. The deploy
+      workflow (`main` → staging, `v*` → production) is gated on `DEPLOY_ENABLED`.
+- [x] `SETUP.md`, `README.md`, and `CLAUDE.md`. Turnstile setup is deferred to Phase 3.
+- [ ] **Provision staging (needs account access):** create the D1 database and buckets,
+      fill in the IDs and Access vars in `wrangler.jsonc`, add the hostname to the Zero
+      Trust app, add the deploy secrets, and set `DEPLOY_ENABLED`. See SETUP.md.
 
 **Exit:** staging URL sits behind Access and shows "Hello, <email>". The CI pipeline is green.
 

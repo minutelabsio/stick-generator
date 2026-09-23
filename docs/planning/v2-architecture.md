@@ -41,7 +41,7 @@ Requirements baseline: [v1-functionality.md](./v1-functionality.md#what-v2-must-
 | Frontend | Vue 3 + Pinia + PrimeVue (unstyled or themed) *or* Svelte 5 (see open question Q1) | Needs a data table, file upload, colour picker, toasts, and dialogs out of the box |
 | Tests | Vitest + `@cloudflare/vitest-pool-workers` for API. Plain Vitest for the renderer's pure logic | Test what can lose data or leak it. Skip the mundane |
 | CI/CD | GitHub Actions: lint + typecheck + test on every push. `main` → staging, `v*` tag → production | Repeatable deploys. No `deploy.sh` |
-| Package manager | bun (already adopted) or pnpm. Pick one and commit the lockfile | |
+| Package manager | **pnpm** (team standard). Lockfile committed, install scripts allowed only for esbuild and workerd | |
 | Observability | `[observability.logs] enabled = true` | Free Workers Logs, and `wrangler tail` works |
 
 Environments: `dev` (local miniflare, seeded), `staging`, `production`. Each has its own
