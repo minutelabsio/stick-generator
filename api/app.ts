@@ -7,6 +7,7 @@ import { batchRoutes } from './routes/batch-routes'
 import { entryRoutes } from './routes/entry-routes'
 import { fileRoutes } from './routes/file-routes'
 import { libraryRoutes } from './routes/library-routes'
+import { publicRoutes } from './routes/public-routes'
 import type { AccessKeyResolver, AccessUser } from './middleware/access-auth'
 
 export interface AppEnv {
@@ -26,6 +27,7 @@ export function createApp({ resolveAccessKeys = createRemoteAccessKeys() }: AppO
   app.onError(handleError)
 
   app.get('/health', c => c.json({ ok: true }))
+  app.route('/public', publicRoutes)
 
   app.use('*', createAccessAuth(resolveAccessKeys))
 

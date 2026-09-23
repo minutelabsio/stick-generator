@@ -5,7 +5,11 @@ import { createApp } from './app'
 
 // Every route not listed here must require Access. Adding a public route means
 // adding it here on purpose, so an unguarded route can't slip in unnoticed.
-const UNAUTHENTICATED_ROUTES = new Set(['GET /api/health'])
+const UNAUTHENTICATED_ROUTES = new Set([
+  'GET /api/health',
+  'GET /api/public/batch',
+  'POST /api/public/submission',
+])
 
 const DEPLOYED_ORIGIN = 'https://stick.example.com'
 

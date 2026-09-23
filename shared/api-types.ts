@@ -71,3 +71,37 @@ export const UpdateEntryRequest = z.object({
   status: z.enum(ENTRY_STATUSES).optional(),
 })
 export type UpdateEntryRequest = z.infer<typeof UpdateEntryRequest>
+
+export const JOIN_CODE_HEADER = 'X-Join-Code'
+
+export type JoinBatchState = 'open' | 'not_yet_open' | 'closed'
+
+export interface JoinBatch {
+  state: JoinBatchState
+  batchName: string | null
+  closesAt: string | null
+  questions: Question[]
+  contactEmail: string | null
+}
+
+function tryParseJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
+
+export const SubmissionFields = z.object({
+  name: z.string().trim().min(1, 'Please enter your name.').max(100),
+  email: z.email('Please enter a valid email address.').max(200),
+  answers: z.string().transform((raw, context) => {
+    const parsed = z.record(z.string(), z.string().max(500)).safeParse(tryParseJson(raw))
+    if (parsed.success) return parsed.data
+    context.addIssue({ code: 'custom', message: 'Answers were not in the expected format.' })
+    return z.NEVER
+  }),
+  consent: z.literal('true', { error: 'Please tick the consent box so we can use your photo.' }),
+})
