@@ -17,9 +17,24 @@ onMounted(checkApi)
 <template>
   <main class="home">
     <h1>Stick Generator</h1>
-    <Message v-if="apiStatus === 'ok'" severity="success">API reachable</Message>
-    <Message v-else-if="apiStatus === 'unreachable'" severity="error">API unreachable</Message>
-    <Message v-else severity="secondary">Checking API…</Message>
+    <Message
+      v-if="apiStatus === 'ok'"
+      severity="success"
+    >
+      API reachable
+    </Message>
+    <Message
+      v-else-if="apiStatus === 'unreachable'"
+      severity="error"
+    >
+      API unreachable
+    </Message>
+    <Message
+      v-else
+      severity="secondary"
+    >
+      Checking API…
+    </Message>
   </main>
 </template>
 
