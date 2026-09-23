@@ -23,6 +23,22 @@ pnpm run dev        # http://localhost:5173, signed in as the dev bypass user
 
 See [SETUP.md](./SETUP.md) for prerequisites, environments, and provisioning.
 
+## Trying the prototype
+
+1. `pnpm run dev:init` once (about 30 s: it loads the v1 layer PNGs into local R2),
+   then `pnpm run dev`.
+2. **Batches** (`/`): open *Demo batch*, or create one with **New batch**.
+3. **Batch page**: copy the join link and open it, ideally in a narrow window, to
+   submit as a follower. Submissions show up in the table.
+4. Click an entry to open the **editor**: pick parts and colours, or **Randomise**,
+   then **Save**. Saved PNGs appear as thumbnails on the batch page.
+
+To start over, delete `.wrangler/state` and run `pnpm run dev:init` again.
+
+**More layer art:** put PNGs (710×943, transparent) under `seed/stick-assets/`, add
+them to `SEED_ASSETS` in `scripts/seed-dev-assets.ts`, and run
+`pnpm run db:seed:assets`.
+
 ## Commands
 
 | Command | Does |

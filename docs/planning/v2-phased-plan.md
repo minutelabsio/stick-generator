@@ -22,6 +22,29 @@ P0 Groundwork ─► P1 Assets ─► P2 Editor ─► P3 Batch intake ─► P4
 
 ---
 
+## Prototype (2026-09-23)
+
+A playable prototype runs locally (see the README's "Trying the prototype"). It
+covers the core loop so the design can be explored before the phases below are
+built properly: batches with a join link, the follower join page, and the editor
+with save and download. It deliberately skips or simplifies the following, which
+the phases still need to do:
+
+- **Editor (P2):** no optimistic-concurrency check on save, no undo/redo, no
+  draft autosave. The head is pickable, but only one head is seeded.
+- **FigureConfig:** stored flat (`assets` per slot, `colors` per channel), not the
+  nested shape sketched in the architecture doc. The flat shape proved simpler for
+  the UI, so update the doc if it sticks.
+- **Assets (P1):** loaded by a dev seed script. There is no Assets screen,
+  upload, or palette editing yet.
+- **Intake (P3):** no Turnstile, rate limits, submission cap, allowlist,
+  duplicate flagging, code rotation, extend/close, or photo cropping. The join page
+  is a route in the team SPA, not a separate lightweight entry.
+- **UI library:** PrimeVue is pinned to 4.5 (MIT). 5.x needs a commercial
+  PrimeUI licence key.
+
+---
+
 ## Phase 0: Groundwork
 
 **Goal:** an empty but real v2 that deploys, authenticates, and has a schema.
