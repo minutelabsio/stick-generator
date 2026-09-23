@@ -6,7 +6,7 @@
   "scripts": {
     "wrangler:types": "wrangler types --env production --strict-vars=false",
     "dev": "pnpm run wrangler:types && CLOUDFLARE_ENV=dev vite dev",
-    "dev:init": "pnpm run db:migrate:local && pnpm run db:seed:local",
+    "dev:init": "pnpm run db:migrate:local && pnpm run db:seed:local && pnpm run db:seed:assets",
     "build": "pnpm run wrangler:types && vue-tsc --build && vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings 0",
@@ -18,7 +18,8 @@
     "db:migrate:local": "wrangler d1 migrations apply DB --env dev --local",
     "db:migrate:staging": "wrangler d1 migrations apply DB --env staging --remote",
     "db:migrate:prod": "wrangler d1 migrations apply DB --env production --remote",
-    "db:seed:local": "wrangler d1 execute DB --env dev --local --file=./scripts/seed-dev.sql"
+    "db:seed:local": "wrangler d1 execute DB --env dev --local --file=./scripts/seed-dev.sql",
+    "db:seed:assets": "node scripts/seed-dev-assets.ts"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.1",
