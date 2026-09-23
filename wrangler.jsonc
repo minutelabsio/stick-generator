@@ -1,0 +1,87 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "stick-generator",
+  "main": "api/index.ts",
+  "account_id": "847aff3ed9c07c12eae4f4747ae61e8b",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+
+  // Workers Logs: view in the dashboard or stream with `wrangler tail`.
+  // Inheritable, so it applies to every environment below.
+  "observability": {
+    "logs": { "enabled": true, "invocation_logs": true }
+  },
+
+  // Bindings and vars are NOT inherited, so every environment declares its own.
+  // dev and test run locally only (miniflare), so their resource IDs are placeholders.
+  "env": {
+    "dev": {
+      "vars": {
+        "ACCESS_TEAM_DOMAIN": "dev.invalid",
+        "ACCESS_AUD": "dev",
+        // Only the dev environment may skip Access. Every request is treated as this user.
+        "ACCESS_DEV_BYPASS_EMAIL": "designer@example.com"
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "stick-generator-dev", "database_id": "local-dev", "migrations_dir": "migrations" }
+      ],
+      "r2_buckets": [
+        { "binding": "ASSET_BUCKET", "bucket_name": "stick-figures-assets-dev" },
+        { "binding": "FIGURE_BUCKET", "bucket_name": "stick-figures-dev" }
+      ]
+    },
+
+    "test": {
+      "vars": {
+        "ACCESS_TEAM_DOMAIN": "test.cloudflareaccess.com",
+        "ACCESS_AUD": "test-audience"
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "stick-generator-test", "database_id": "local-test", "migrations_dir": "migrations" }
+      ],
+      "r2_buckets": [
+        { "binding": "ASSET_BUCKET", "bucket_name": "stick-figures-assets-test" },
+        { "binding": "FIGURE_BUCKET", "bucket_name": "stick-figures-test" }
+      ]
+    },
+
+    // TODO(setup): create the staging D1 database and buckets, then fill in the IDs below.
+    // See SETUP.md, "Provisioning Cloudflare resources".
+    "staging": {
+      "vars": {
+        "ACCESS_TEAM_DOMAIN": "TODO.cloudflareaccess.com",
+        "ACCESS_AUD": "TODO"
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "stick-generator-staging", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+      ],
+      "r2_buckets": [
+        { "binding": "ASSET_BUCKET", "bucket_name": "stick-figures-assets-staging" },
+        { "binding": "FIGURE_BUCKET", "bucket_name": "stick-figures-staging" }
+      ]
+    },
+
+    // TODO(setup): create the production D1 database, then fill in the ID below.
+    // The buckets are the existing v1 buckets; v2 writes only under the v2/ prefix.
+    "production": {
+      "vars": {
+        "ACCESS_TEAM_DOMAIN": "TODO.cloudflareaccess.com",
+        "ACCESS_AUD": "TODO"
+      },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "stick-generator-production", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+      ],
+      "r2_buckets": [
+        { "binding": "ASSET_BUCKET", "bucket_name": "stick-figures-assets" },
+        { "binding": "FIGURE_BUCKET", "bucket_name": "stick-figures" }
+      ]
+    }
+  }
+}
