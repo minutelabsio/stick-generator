@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import Listbox from 'primevue/listbox'
 import { SLOTS } from '@shared/figure'
-import type { SlotId } from '@shared/figure'
+import type { FigureConfig, SlotId } from '@shared/figure'
 import type { LibraryAsset } from '@shared/api-types'
 import AssetThumb from '@/components/asset-thumb.vue'
 
-const props = defineProps<{ chosen: Partial<Record<SlotId, LibraryAsset>> }>()
+const props = defineProps<{
+  chosen: Partial<Record<SlotId, LibraryAsset>>
+  colors: FigureConfig['colors']
+}>()
 
 const activeSlot = defineModel<SlotId>({ required: true })
 
@@ -46,7 +49,10 @@ function onChange(slot: SlotId | null) {
         class="thumb"
         :class="{ empty: !chosenFor(option) }"
       >
-        <AssetThumb :asset="chosenFor(option)" />
+        <AssetThumb
+          :asset="chosenFor(option)"
+          :colors="colors"
+        />
       </span>
       <span>{{ labelFor(option) }}</span>
     </template>

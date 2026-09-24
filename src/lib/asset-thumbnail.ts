@@ -1,65 +1,121 @@
 import { LAYERS } from '@shared/figure'
+import type { AssetPart, FigureConfig, SlotId } from '@shared/figure'
 import type { LibraryAsset } from '@shared/api-types'
 import { createCanvas, get2dContext, loadImage } from './images'
 
 const THUMBNAIL_PADDING = 12
-const MASK_PREVIEW_COLOR = '#d9d9d9'
-const RECOLOURED_LINE_PREVIEW_COLOR = '#2b2b2b'
+// Stand-ins for a recoloured part whose colour hasn't been chosen yet.
+const UNTINTED_MASK_COLOR = '#d9d9d9'
+const UNTINTED_LINE_COLOR = '#2b2b2b'
 const BYTES_PER_PIXEL = 4
 const ALPHA_OFFSET = 3
+// Tinted thumbnails vary with every colour tried, so old ones are dropped past this.
+const THUMBNAIL_CACHE_LIMIT = 600
 
-const thumbnailCache = new Map<string, Promise<string>>()
+// Back to front, the order the renderer draws one asset's own parts in.
+const PART_ORDER: AssetPart[] = ['backMask', 'backLine', 'mask', 'line']
+const MASK_PARTS = new Set<AssetPart>(['backMask', 'mask'])
 
-// Assets are full-canvas PNGs with the item somewhere small, so crop to what's drawn.
-export function assetThumbnail(asset: LibraryAsset) {
-  const cached = thumbnailCache.get(asset.id)
+interface CropBox {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+interface PreparedAsset {
+  parts: { part: AssetPart, image: HTMLImageElement }[]
+  crop: CropBox
+}
+
+// A part maps to its chosen colour, or to null when it is recoloured at render time
+// but no colour is chosen yet. Parts drawn as-is are absent.
+type PartTints = Partial<Record<AssetPart, string | null>>
+
+const preparedAssets = new Map<string, Promise<PreparedAsset | null>>()
+const thumbnails = new Map<string, Promise<string>>()
+
+// Draws the asset in the figure's current colours, so designers browse shapes the way
+// they will look rather than as grey line art.
+export function assetThumbnail(asset: LibraryAsset, colors: FigureConfig['colors'] = {}) {
+  const tints = partTints(asset.slot, colors)
+  const key = `${asset.id}:${JSON.stringify(tints)}`
+  const cached = thumbnails.get(key)
   if (cached) return cached
-  const thumbnail = drawCroppedThumbnail(asset)
-  thumbnailCache.set(asset.id, thumbnail)
+  const thumbnail = drawThumbnail(asset, tints)
+  thumbnails.set(key, thumbnail)
+  evictOldestThumbnails()
   return thumbnail
 }
 
-async function drawCroppedThumbnail(asset: LibraryAsset) {
-  const layerUrls = [asset.partUrls.backMask, asset.partUrls.backLine, asset.partUrls.mask, asset.partUrls.line]
-  const images = await Promise.all(layerUrls.map(url => (url ? loadImage(url) : Promise.resolve(null))))
-  const [firstImage] = images.filter(image => image !== null)
-  if (!firstImage) return ''
-
-  const context = get2dContext(createCanvas(firstImage.width, firstImage.height), { willReadFrequently: true })
-  const lineIsRecoloured = hasRecolouredLine(asset)
-  images.forEach((image, index) => {
-    if (!image) return
-    const isMask = index % 2 === 0
-    if (isMask) return context.drawImage(filledWith(image, MASK_PREVIEW_COLOR), 0, 0)
-    context.drawImage(lineIsRecoloured ? filledWith(image, RECOLOURED_LINE_PREVIEW_COLOR) : image, 0, 0)
-  })
-  return cropToContent(context)
+function partTints(slot: SlotId, colors: FigureConfig['colors']): PartTints {
+  return Object.fromEntries(LAYERS.flatMap(({ slot: layerSlot, part, tint }) =>
+    (layerSlot === slot && tint ? [[part, colors[tint] ?? null]] : [])))
 }
 
-// Beards and mustaches are stored in an arbitrary colour and recoloured at render
-// time, so their raw pixels are meaningless in a preview.
-const hasRecolouredLine = (asset: LibraryAsset) =>
-  LAYERS.some(layer => layer.slot === asset.slot && layer.part === 'line' && layer.tint)
+function evictOldestThumbnails() {
+  const excess = thumbnails.size - THUMBNAIL_CACHE_LIMIT
+  if (excess <= 0) return
+  for (const key of [...thumbnails.keys()].slice(0, excess)) thumbnails.delete(key)
+}
 
-function filledWith(image: HTMLImageElement, color: string) {
-  const context = get2dContext(createCanvas(image.width, image.height))
-  context.drawImage(image, 0, 0)
+async function drawThumbnail(asset: LibraryAsset, tints: PartTints) {
+  const prepared = await prepareAsset(asset)
+  if (!prepared) return ''
+  const { crop, parts } = prepared
+  const context = get2dContext(createCanvas(crop.width, crop.height))
+  for (const { part, image } of parts) context.drawImage(croppedPart({ part, image, crop, tints }), 0, 0)
+  return context.canvas.toDataURL()
+}
+
+// Tints after cropping, so each colour change only fills a thumbnail-sized canvas.
+function croppedPart({ part, image, crop, tints }: { part: AssetPart, image: HTMLImageElement, crop: CropBox, tints: PartTints }) {
+  const context = get2dContext(createCanvas(crop.width, crop.height))
+  context.drawImage(image, crop.left, crop.top, crop.width, crop.height, 0, 0, crop.width, crop.height)
+  if (!(part in tints)) return context.canvas
+  const fallback = MASK_PARTS.has(part) ? UNTINTED_MASK_COLOR : UNTINTED_LINE_COLOR
   context.globalCompositeOperation = 'source-in'
-  context.fillStyle = color
-  context.fillRect(0, 0, image.width, image.height)
+  context.fillStyle = tints[part] ?? fallback
+  context.fillRect(0, 0, crop.width, crop.height)
   return context.canvas
 }
 
-function cropToContent(context: CanvasRenderingContext2D) {
+// Loading and cropping are the slow steps and don't depend on colour, so they run once
+// per asset.
+function prepareAsset(asset: LibraryAsset) {
+  const cached = preparedAssets.get(asset.id)
+  if (cached) return cached
+  const preparing = loadAndCrop(asset)
+  preparedAssets.set(asset.id, preparing)
+  return preparing
+}
+
+async function loadAndCrop(asset: LibraryAsset): Promise<PreparedAsset | null> {
+  const loaded = await Promise.all(PART_ORDER.map(async (part) => {
+    const url = asset.partUrls[part]
+    return url ? { part, image: await loadImage(url) } : null
+  }))
+  const parts = loaded.filter(entry => entry !== null)
+  const [first] = parts
+  if (!first) return null
+
+  const context = get2dContext(createCanvas(first.image.width, first.image.height), { willReadFrequently: true })
+  for (const { image } of parts) context.drawImage(image, 0, 0)
+  return { parts, crop: cropBox(context) }
+}
+
+// Assets are full-canvas PNGs with the item somewhere small, so crop to what's drawn.
+function cropBox(context: CanvasRenderingContext2D): CropBox {
   const { width, height } = context.canvas
   const box = contentBounds(context.getImageData(0, 0, width, height))
   const left = Math.max(0, box.left - THUMBNAIL_PADDING)
   const top = Math.max(0, box.top - THUMBNAIL_PADDING)
-  const cropWidth = Math.min(width, box.right + THUMBNAIL_PADDING) - left
-  const cropHeight = Math.min(height, box.bottom + THUMBNAIL_PADDING) - top
-  const cropped = get2dContext(createCanvas(cropWidth, cropHeight))
-  cropped.drawImage(context.canvas, left, top, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
-  return cropped.canvas.toDataURL()
+  return {
+    left,
+    top,
+    width: Math.min(width, box.right + THUMBNAIL_PADDING) - left,
+    height: Math.min(height, box.bottom + THUMBNAIL_PADDING) - top,
+  }
 }
 
 // Mutates one box while scanning ~670k pixels; allocating a new one per pixel would crawl.

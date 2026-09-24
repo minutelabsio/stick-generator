@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import VirtualScroller from 'primevue/virtualscroller'
 import { computed } from 'vue'
+import type { FigureConfig } from '@shared/figure'
 import type { LibraryAsset } from '@shared/api-types'
 import AssetThumb from '@/components/asset-thumb.vue'
 
@@ -8,6 +9,7 @@ const props = defineProps<{
   assets: LibraryAsset[]
   selectedId: string | undefined
   allowNone: boolean
+  colors: FigureConfig['colors']
 }>()
 
 const emit = defineEmits<{ select: [assetId: string | undefined] }>()
@@ -54,6 +56,7 @@ const isSelected = (tile: Tile) => (tile ? tile.id === props.selectedId : !props
           <AssetThumb
             v-if="tile"
             :asset="tile"
+            :colors="colors"
           />
           <i
             v-else

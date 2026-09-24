@@ -388,6 +388,7 @@ onMounted(() => loadEntry(props.entryId))
         <SlotRail
           v-model="activeSlot"
           :chosen="chosenAssets"
+          :colors="figure.colors"
         />
         <section
           class="picker"
@@ -431,7 +432,10 @@ onMounted(() => loadEntry(props.entryId))
                 :title="asset.label"
                 @click="onSelectAsset(activeSlot, asset.id)"
               >
-                <AssetThumb :asset="asset" />
+                <AssetThumb
+                  :asset="asset"
+                  :colors="figure.colors"
+                />
               </button>
             </div>
           </div>
@@ -446,6 +450,7 @@ onMounted(() => loadEntry(props.entryId))
             :assets="filteredAssets"
             :selected-id="figure.assets[activeSlot]"
             :allow-none="!SLOTS[activeSlot].required && !assetFilter"
+            :colors="figure.colors"
             @select="onSelectAsset(activeSlot, $event)"
           />
         </section>
