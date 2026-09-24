@@ -1,5 +1,5 @@
 ---
-status: planned
+status: partial
 created: 2026-09-24
 updated: 2026-09-24
 summary: "Visual and interaction design for the designer workspace (batch list, batch page, figure editor)."
@@ -33,7 +33,7 @@ considered and rejected: it fights the figures and skews colour judgement.
 | Graphite | `#2A2C2F` | Text and selection rings |
 | Rule | `#C6C8CC` | Dividers and input borders |
 | Pencil | `#6A6D72` | Secondary text |
-| Process cyan | `#0088C7` | Primary actions, focus ring, links. Nothing else uses it |
+| Process cyan | `#0088C7` | Focus ring. Filled buttons and links use the darker `#0074AA`, because white on `#0088C7` is under 4.5:1. Nothing else uses cyan |
 | Unsaved | `#C8246A` | The unsaved-changes dot only |
 
 - Status is text plus a glyph (○ new, ◐ in progress, ● done) in graphite, not
@@ -47,6 +47,8 @@ considered and rejected: it fights the figures and skews colour judgement.
   Weights 400 body, 600 labels, 700 the entry name. Tabular figures for counts and dates.
 - **Atkinson Hyperlegible Mono** only for the join link, the one string that gets copied
   and shared.
+- Both are self-hosted through Fontsource. The join page is public, and a Google Fonts
+  request would hand followers' IPs to a third party.
 
 ### Principles
 
@@ -126,6 +128,26 @@ the proof without committing. Click or Enter commits. Esc restores what was ther
 
 Shortcuts are listed in a `?` popover, not written on screen.
 
+## Built from PrimeVue
+
+Use PrimeVue 4.5 components and restyle them through the preset rather than building
+our own. The docs at primevue.dev describe v5, so check a component exists in
+`node_modules/primevue/` before reaching for it (CommandMenu and Kbd don't in 4.5).
+
+| Part | Component |
+|---|---|
+| Theme | `definePreset(Aura, …)`: neutral surface scale, cyan primary |
+| Page and editor header rows | `Toolbar` (start / end slots) |
+| Batch progress bar | `MeterGroup` |
+| Batch list and entries | `DataTable` |
+| Slot rail | `Listbox` with an option template (thumbnail + label) |
+| Asset filter | `IconField` + `InputIcon` + `InputText` |
+| Asset grid | `VirtualScroller`, one item per row of tiles |
+| ⋯ menu | `Menu` in popup mode |
+| Shortcut list | `Popover` |
+| Custom colour | `ColorPicker` |
+| Status | `Select` with an option template for the glyph |
+
 ## Not in scope
 
 - Clicking the figure to open a slot (considered and dropped).
@@ -136,7 +158,7 @@ Shortcuts are listed in a `?` popover, not written on screen.
 
 ## Progress
 
-- [ ] Tokens, fonts, and a PrimeVue preset (neutral surfaces, cyan primary).
+- [x] Tokens, fonts, and a PrimeVue preset (neutral surfaces, cyan primary).
 - [ ] Remove the site title bar. Page header rows on the batch list and batch page.
 - [ ] Batch list as a ledger with a status bar. Status shown as glyph plus text.
 - [ ] Editor layout: header row with meta controls, reference column, proof sheet.

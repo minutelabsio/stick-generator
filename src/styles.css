@@ -1,16 +1,62 @@
+/* Names from the workspace design doc, mapped onto the PrimeVue preset's scales. */
 :root {
-  font-family: system-ui, sans-serif;
+  --board: var(--p-surface-200);
+  --glaze: var(--p-surface-0);
+  --graphite: var(--p-surface-700);
+  --rule: var(--p-surface-300);
+  --pencil: var(--p-surface-500);
+  --cyan: var(--p-primary-500);
+  --unsaved: #c8246a;
+
+  --text-sm: 0.75rem;
+  --text-md: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.3125rem;
+  --text-xl: 1.75rem;
+
+  font-family: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
   color-scheme: light;
 }
 
 body {
   margin: 0;
-  background: #f6f6f4;
-  color: #1f1f1f;
+  background: var(--board);
+  color: var(--graphite);
 }
 
 h1, h2, h3 {
-  margin: 0 0 0.75rem;
+  margin: 0;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+h2 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+a {
+  color: var(--p-primary-color);
+}
+
+code {
+  font-family: 'Atkinson Hyperlegible Mono Variable', ui-monospace, monospace;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 
 .page {
@@ -20,12 +66,19 @@ h1, h2, h3 {
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e3e3df;
-  border-radius: 0.75rem;
+  background: var(--glaze);
+  border: 1px solid var(--rule);
+  border-radius: var(--p-border-radius-lg);
   padding: 1rem;
 }
 
 .muted {
-  color: #6b6b66;
+  color: var(--pencil);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
 }

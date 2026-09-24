@@ -22,6 +22,8 @@
     "db:seed:assets": "node scripts/seed-dev-assets.ts"
   },
   "dependencies": {
+    "@fontsource-variable/atkinson-hyperlegible-mono": "^5.3.0",
+    "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
     "@hono/zod-validator": "^0.9.1",
     "@primeuix/themes": "^2.0.3",
     "hono": "^4.13.8",
