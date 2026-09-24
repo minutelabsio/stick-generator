@@ -22,6 +22,9 @@ const SLOT_GROUPS: { label: string, slots: SlotId[] }[] = [
 const chosenFor = (slot: SlotId) => props.chosen[slot]
 const labelFor = (slot: SlotId) => SLOTS[slot].label
 
+// Arrow keys switch slots as focus moves, but the mouse only switches on click:
+// Listbox's hover-to-focus would otherwise change slot as the pointer passes over.
+
 // Listbox clears a single selection when its selected option is clicked again. The rail
 // always has an open slot, so that "clear" is ignored.
 function onChange(slot: SlotId | null) {
@@ -36,6 +39,7 @@ function onChange(slot: SlotId | null) {
     option-group-label="label"
     option-group-children="slots"
     select-on-focus
+    :focus-on-hover="false"
     scroll-height="none"
     class="slot-rail"
     aria-label="Figure parts"
