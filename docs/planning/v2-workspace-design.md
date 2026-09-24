@@ -162,7 +162,7 @@ our own. The docs at primevue.dev describe v5, so check a component exists in
 - [x] Remove the site title bar. Page header rows on the batch list and batch page.
 - [x] Batch list as a ledger with a status bar. Status shown as glyph plus text.
 - [x] Editor layout: header row with meta controls, reference column, proof sheet.
-- [ ] Done, next entry, and keyboard shortcuts (←/→, ⌘S, ⌘↵, `?`).
+- [x] Done, next entry, and keyboard shortcuts (←/→, ⌘S, ⌘↵, `?`).
 - [ ] Slot rail and picker with pinned tint, filter, and Recent.
 - [ ] Virtualised asset grid with tint-drawn thumbnails.
 - [ ] Preview on hover and keyboard, commit on click or Enter, Esc to restore.

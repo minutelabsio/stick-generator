@@ -2,10 +2,12 @@
 import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import Message from 'primevue/message'
+import Popover from 'primevue/popover'
 import Select from 'primevue/select'
 import Toolbar from 'primevue/toolbar'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, RouterLink, useRouter } from 'vue-router'
 import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_CHANNELS, SLOTS } from '@shared/figure'
 import type { ColorChannelId, FigureConfig, SlotId } from '@shared/figure'
@@ -18,6 +20,7 @@ import { initialFigure, randomFigure, selectAsset, selectColor } from '@/lib/fig
 import { createCanvas, get2dContext } from '@/lib/images'
 import { renderFigure } from '@/lib/render-figure'
 import { STATUS_OPTIONS } from '@/lib/status'
+import { MOD_KEY_LABEL, useShortcuts } from '@/lib/use-shortcuts'
 
 interface EditorSection {
   title: string
@@ -44,6 +47,8 @@ const router = useRouter()
 const toast = useToast()
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 const moreMenu = useTemplateRef<InstanceType<typeof Menu>>('moreMenu')
+const shortcutsPopover = useTemplateRef<InstanceType<typeof Popover>>('shortcutsPopover')
+const shortcutsButton = useTemplateRef<ComponentPublicInstance>('shortcutsButton')
 
 const library = ref<Library | null>(null)
 const entry = ref<EntryDetail | null>(null)
@@ -115,21 +120,40 @@ const canvasToPng = (source: HTMLCanvasElement) => new Promise<Blob>((resolve, r
   source.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Could not export the canvas.'))), 'image/png')
 })
 
-async function save() {
-  if (!canvas.value || !figure.value) return
+interface PersistOptions {
+  nextStatus: EntryStatus
+  confirmation: string
+}
+
+async function persist({ nextStatus, confirmation }: PersistOptions) {
+  if (!canvas.value || !figure.value) return false
   isSaving.value = true
   try {
     await api.uploadRender(props.entryId, await canvasToPng(canvas.value))
-    const nextStatus = status.value === 'new' ? 'in_progress' : status.value
     entry.value = await api.updateEntry(props.entryId, { figure: figure.value, status: nextStatus })
     status.value = entry.value.status
     isDirty.value = false
-    toast.add({ severity: 'success', summary: 'Saved', life: 2000 })
+    toast.add({ severity: 'success', summary: confirmation, life: 2000 })
+    return true
   } catch (error) {
     toast.add({ severity: 'error', summary: 'Could not save', detail: String(error), life: 6000 })
+    return false
   } finally {
     isSaving.value = false
   }
+}
+
+// Saving is the moment work starts, so a new entry moves to in progress.
+const save = () => persist({
+  nextStatus: status.value === 'new' ? 'in_progress' : status.value,
+  confirmation: 'Saved',
+})
+
+async function markDoneAndContinue() {
+  const isSaved = await persist({ nextStatus: 'done', confirmation: 'Marked done' })
+  if (!isSaved) return
+  if (neighbours.value.next) return goTo(neighbours.value.next)
+  if (batch.value) await router.push({ name: 'batch', params: { batchId: batch.value.id } })
 }
 
 async function changeStatus(nextStatus: EntryStatus) {
@@ -155,6 +179,21 @@ const moreActions = [
 ]
 
 const goTo = (entryId: string | undefined) => entryId && router.push({ name: 'entry', params: { entryId } })
+
+const SHORTCUT_HELP = [
+  { keys: ['←', '→'], action: 'Previous or next entry' },
+  { keys: [MOD_KEY_LABEL, 'S'], action: 'Save' },
+  { keys: [MOD_KEY_LABEL, 'Enter'], action: 'Mark done and open the next entry' },
+  { keys: ['?'], action: 'Show these shortcuts' },
+]
+
+useShortcuts({
+  'ArrowLeft': () => goTo(neighbours.value.previous),
+  'ArrowRight': () => goTo(neighbours.value.next),
+  'mod+s': save,
+  'mod+enter': markDoneAndContinue,
+  '?': event => shortcutsPopover.value?.toggle(event, shortcutsButton.value?.$el),
+})
 
 const confirmLeave = () => !isDirty.value || window.confirm(UNSAVED_CHANGES_PROMPT)
 
@@ -216,6 +255,30 @@ onMounted(() => loadEntry(props.entryId))
           </nav>
         </template>
         <template #end>
+          <Button
+            ref="shortcutsButton"
+            icon="pi pi-question-circle"
+            text
+            severity="secondary"
+            aria-label="Keyboard shortcuts"
+            @click="shortcutsPopover?.toggle($event)"
+          />
+          <Popover ref="shortcutsPopover">
+            <dl class="shortcuts">
+              <template
+                v-for="shortcut in SHORTCUT_HELP"
+                :key="shortcut.action"
+              >
+                <dt>
+                  <kbd
+                    v-for="key in shortcut.keys"
+                    :key="key"
+                  >{{ key }}</kbd>
+                </dt>
+                <dd>{{ shortcut.action }}</dd>
+              </template>
+            </dl>
+          </Popover>
           <Select
             :model-value="status"
             :options="STATUS_OPTIONS"
@@ -249,8 +312,13 @@ onMounted(() => loadEntry(props.entryId))
             severity="secondary"
             :class="{ unsaved: isDirty }"
             :aria-label="isDirty ? 'Save (unsaved changes)' : 'Save'"
-            :loading="isSaving"
+            :disabled="isSaving"
             @click="save"
+          />
+          <Button
+            :label="neighbours.next ? 'Done, next entry' : 'Done, back to batch'"
+            :loading="isSaving"
+            @click="markDoneAndContinue"
           />
         </template>
       </Toolbar>
@@ -375,6 +443,24 @@ onMounted(() => loadEntry(props.entryId))
   display: flex;
   align-items: center;
   font-size: var(--text-md);
+}
+
+.shortcuts {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.5rem 1rem;
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.shortcuts dt {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.shortcuts dd {
+  margin: 0;
 }
 
 .unsaved::after {

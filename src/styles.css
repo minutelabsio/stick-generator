@@ -53,6 +53,20 @@ code {
   font-family: 'Atkinson Hyperlegible Mono Variable', ui-monospace, monospace;
 }
 
+kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0.05em 0.35em;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: center;
+  background: var(--glaze);
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: var(--p-border-radius-sm);
+}
+
 :focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
