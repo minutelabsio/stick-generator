@@ -160,7 +160,7 @@ our own. The docs at primevue.dev describe v5, so check a component exists in
 
 - [x] Tokens, fonts, and a PrimeVue preset (neutral surfaces, cyan primary).
 - [x] Remove the site title bar. Page header rows on the batch list and batch page.
-- [ ] Batch list as a ledger with a status bar. Status shown as glyph plus text.
+- [x] Batch list as a ledger with a status bar. Status shown as glyph plus text.
 - [ ] Editor layout: header row with meta controls, reference column, proof sheet.
 - [ ] Done, next entry, and keyboard shortcuts (←/→, ⌘S, ⌘↵, `?`).
 - [ ] Slot rail and picker with pinned tint, filter, and Recent.

@@ -8,7 +8,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import type { BatchDetail, EntrySummary } from '@shared/api-types'
-import StatusTag from '@/components/status-tag.vue'
+import StatusMark from '@/components/status-mark.vue'
 import { api } from '@/lib/api'
 import { formatDate, isBatchOpen } from '@/lib/status'
 
@@ -63,14 +63,14 @@ onMounted(async () => {
         </template>
       </Toolbar>
 
-      <section class="card share">
-        <div>
-          <strong>{{ isBatchOpen(batch) ? 'Open' : 'Closed' }}</strong>
-          <span class="muted"> · closes {{ formatDate(batch.closesAt) }}</span>
-        </div>
+      <section class="intake card">
+        <p>
+          <strong>{{ isBatchOpen(batch) ? 'Intake open' : 'Intake closed' }}</strong>
+          <span class="muted">{{ isBatchOpen(batch) ? 'until' : 'since' }} {{ formatDate(batch.closesAt) }}</span>
+        </p>
         <div
           v-if="joinLink"
-          class="share-link"
+          class="join-link"
         >
           <code>{{ joinLink }}</code>
           <Button
@@ -116,7 +116,7 @@ onMounted(async () => {
         />
         <Column header="Status">
           <template #body="{ data }">
-            <StatusTag :status="data.status" />
+            <StatusMark :status="data.status" />
           </template>
         </Column>
         <Column header="Submitted">
@@ -143,14 +143,22 @@ onMounted(async () => {
   margin-bottom: 1.5rem;
 }
 
-.share {
+.intake {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin-bottom: 1rem;
 }
 
-.share-link {
+.intake p {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.join-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;

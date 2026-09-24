@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import MeterGroup from 'primevue/metergroup'
 import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
 import Toolbar from 'primevue/toolbar'
 import { useToast } from 'primevue/usetoast'
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import type { BatchSummary } from '@shared/api-types'
 import { api } from '@/lib/api'
-import { formatDate, isBatchOpen } from '@/lib/status'
+import { describeCounts, formatDate, isBatchOpen, progressSegments, totalEntries } from '@/lib/status'
 
 const DEFAULT_WINDOW_DAYS = 14
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
@@ -31,8 +34,6 @@ function emptyNewBatch() {
     questions: 'Describe your hair\nA hobby or favourite thing',
   }
 }
-
-const totalEntries = (batch: BatchSummary) => Object.values(batch.statusCounts).reduce((sum, count) => sum + count, 0)
 
 async function loadBatches() {
   try {
@@ -56,6 +57,8 @@ async function createBatch() {
     toast.add({ severity: 'error', summary: 'Could not create batch', detail: String(error), life: 5000 })
   }
 }
+
+const openBatch = ({ data }: { data: BatchSummary }) => router.push({ name: 'batch', params: { batchId: data.id } })
 
 onMounted(loadBatches)
 </script>
@@ -82,29 +85,56 @@ onMounted(loadBatches)
       {{ loadError }}
     </Message>
 
-    <div class="batch-list">
-      <RouterLink
-        v-for="batch in batches"
-        :key="batch.id"
-        :to="{ name: 'batch', params: { batchId: batch.id } }"
-        class="card batch-card"
+    <DataTable
+      :value="batches"
+      row-hover
+      class="ledger"
+      @row-click="openBatch"
+    >
+      <template #empty>
+        No batches yet. Create one to get a join link to share with followers.
+      </template>
+      <Column header="Batch">
+        <template #body="{ data }">
+          <RouterLink
+            :to="{ name: 'batch', params: { batchId: data.id } }"
+            class="batch-name"
+          >
+            {{ data.name }}
+          </RouterLink>
+        </template>
+      </Column>
+      <Column
+        header="Progress"
+        style="width: 40%"
       >
-        <div class="batch-title">
-          <h2>{{ batch.name }}</h2>
-          <span :class="isBatchOpen(batch) ? 'open' : 'closed'">
-            {{ isBatchOpen(batch) ? 'Open' : 'Closed' }}
-          </span>
-        </div>
-        <p class="muted">
-          Closes {{ formatDate(batch.closesAt) }} · {{ totalEntries(batch) }} entries
-        </p>
-        <p class="counts">
-          <span>{{ batch.statusCounts.new }} new</span>
-          <span>{{ batch.statusCounts.in_progress }} in progress</span>
-          <span>{{ batch.statusCounts.done }} done</span>
-        </p>
-      </RouterLink>
-    </div>
+        <template #body="{ data }">
+          <MeterGroup
+            :value="progressSegments(data.statusCounts)"
+            :max="Math.max(1, totalEntries(data.statusCounts))"
+          >
+            <template #label>
+              <span class="muted counts">{{ describeCounts(data.statusCounts) || 'No entries yet' }}</span>
+            </template>
+          </MeterGroup>
+        </template>
+      </Column>
+      <Column header="Entries">
+        <template #body="{ data }">
+          {{ totalEntries(data.statusCounts) }}
+        </template>
+      </Column>
+      <Column header="Intake">
+        <template #body="{ data }">
+          <span :class="{ muted: !isBatchOpen(data) }">{{ isBatchOpen(data) ? 'Open' : 'Closed' }}</span>
+        </template>
+      </Column>
+      <Column header="Closes">
+        <template #body="{ data }">
+          {{ formatDate(data.closesAt) }}
+        </template>
+      </Column>
+    </DataTable>
 
     <Dialog
       v-model:visible="isCreating"
@@ -153,41 +183,18 @@ onMounted(loadBatches)
   margin-bottom: 1.5rem;
 }
 
-.batch-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-  gap: 1rem;
+.ledger :deep(tr) {
+  cursor: pointer;
 }
 
-.batch-card {
+.batch-name {
   color: inherit;
+  font-weight: 600;
   text-decoration: none;
 }
 
-.batch-card:hover {
-  border-color: #b9b9b2;
-}
-
-.batch-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-
-.open {
-  color: #1b7f3b;
-  font-weight: 600;
-}
-
-.closed {
-  color: #8a8a84;
-}
-
 .counts {
-  display: flex;
-  gap: 1rem;
-  margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--text-md);
 }
 
 .form {
