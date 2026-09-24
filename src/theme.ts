@@ -59,4 +59,10 @@ export const WORKSPACE_PRESET = definePreset(Aura, {
       },
     },
   },
+  components: {
+    // Page header rows sit straight on the board. The editor's header adds its own surface.
+    toolbar: {
+      root: { background: 'transparent', borderColor: 'transparent', padding: '0', gap: '0.75rem' },
+    },
+  },
 })

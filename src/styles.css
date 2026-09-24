@@ -15,7 +15,6 @@
   --text-xl: 1.75rem;
 
   font-family: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
   line-height: 1.45;
   color-scheme: light;
 }
@@ -70,6 +69,11 @@ code {
   border: 1px solid var(--rule);
   border-radius: var(--p-border-radius-lg);
   padding: 1rem;
+}
+
+.p-datatable,
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 .muted {

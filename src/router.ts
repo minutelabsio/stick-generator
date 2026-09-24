@@ -10,6 +10,6 @@ export const router = createRouter({
     { path: '/', name: 'batches', component: BatchesView },
     { path: '/batches/:batchId', name: 'batch', component: BatchView, props: true },
     { path: '/entries/:entryId', name: 'entry', component: EntryEditorView, props: true },
-    { path: '/join', name: 'join', component: JoinView, meta: { public: true } },
+    { path: '/join', name: 'join', component: JoinView },
   ],
 })

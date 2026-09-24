@@ -5,6 +5,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
+import Toolbar from 'primevue/toolbar'
 import { useToast } from 'primevue/usetoast'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -61,14 +62,18 @@ onMounted(loadBatches)
 
 <template>
   <main class="page">
-    <div class="heading">
-      <h1>Batches</h1>
-      <Button
-        label="New batch"
-        icon="pi pi-plus"
-        @click="isCreating = true"
-      />
-    </div>
+    <Toolbar class="page-header">
+      <template #start>
+        <h1>Batches</h1>
+      </template>
+      <template #end>
+        <Button
+          label="New batch"
+          icon="pi pi-plus"
+          @click="isCreating = true"
+        />
+      </template>
+    </Toolbar>
 
     <Message
       v-if="loadError"
@@ -144,11 +149,8 @@ onMounted(loadBatches)
 </template>
 
 <style scoped>
-.heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+.page-header {
+  margin-bottom: 1.5rem;
 }
 
 .batch-list {

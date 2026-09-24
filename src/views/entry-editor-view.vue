@@ -298,7 +298,7 @@ onMounted(() => loadEntry(props.entryId))
   grid-template-columns: 18rem minmax(0, 1fr) 24rem;
   gap: 1rem;
   padding: 1rem;
-  height: calc(100vh - 3rem);
+  height: 100vh;
   box-sizing: border-box;
 }
 

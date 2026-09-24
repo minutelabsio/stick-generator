@@ -3,9 +3,10 @@ import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
+import Toolbar from 'primevue/toolbar'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import type { BatchDetail, EntrySummary } from '@shared/api-types'
 import StatusTag from '@/components/status-tag.vue'
 import { api } from '@/lib/api'
@@ -50,7 +51,17 @@ onMounted(async () => {
     </Message>
 
     <template v-if="batch">
-      <h1>{{ batch.name }}</h1>
+      <RouterLink
+        :to="{ name: 'batches' }"
+        class="back"
+      >
+        <i class="pi pi-angle-left" /> Batches
+      </RouterLink>
+      <Toolbar class="page-header">
+        <template #start>
+          <h1>{{ batch.name }}</h1>
+        </template>
+      </Toolbar>
 
       <section class="card share">
         <div>
@@ -119,6 +130,19 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+  font-size: var(--text-md);
+  text-decoration: none;
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
 .share {
   display: flex;
   flex-direction: column;
