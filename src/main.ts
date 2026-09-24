@@ -8,11 +8,11 @@ import 'primeicons/primeicons.css'
 import './styles.css'
 import App from './app.vue'
 import { router } from './router'
-import { WORKSPACE_PRESET } from './theme'
+import { WORKSPACE_PRESET, WORKSPACE_THEME_OPTIONS } from './theme'
 
 createApp(App)
   .use(createPinia())
   .use(router)
-  .use(PrimeVue, { theme: { preset: WORKSPACE_PRESET } })
+  .use(PrimeVue, { theme: { preset: WORKSPACE_PRESET, options: WORKSPACE_THEME_OPTIONS } })
   .use(ToastService)
   .mount('#app')

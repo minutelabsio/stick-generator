@@ -66,3 +66,8 @@ export const WORKSPACE_PRESET = definePreset(Aura, {
     },
   },
 })
+
+// Light only, on purpose: tints are judged against the white of the mug. PrimeVue
+// would otherwise follow the OS dark setting and flip its components and the surface
+// variables our own styles are built on, leaving a half-dark page.
+export const WORKSPACE_THEME_OPTIONS = { darkModeSelector: false }

@@ -38,7 +38,8 @@ considered and rejected: it fights the figures and skews colour judgement.
 
 - Status is text plus a glyph (○ new, ◐ in progress, ● done) in graphite, not
   colour-coded tags.
-- Light mode only, on purpose: tints are judged against white ceramic.
+- Light mode only, on purpose: tints are judged against white ceramic. PrimeVue's
+  `darkModeSelector` is off, or it follows the OS setting and half the page goes dark.
 
 ### Type
 
