@@ -1,5 +1,8 @@
 <script setup lang="ts">
-defineProps<{
+import ColorPicker from 'primevue/colorpicker'
+import { useId } from 'vue'
+
+const props = defineProps<{
   label: string
   colors: string[]
   selected: string | undefined
@@ -7,38 +10,44 @@ defineProps<{
 
 const emit = defineEmits<{ select: [color: string | undefined] }>()
 
-const isSelected = (color: string, selected: string | undefined) => color.toLowerCase() === selected?.toLowerCase()
+const labelId = useId()
 
-function onCustomColor(event: Event) {
-  if (event.target instanceof HTMLInputElement) emit('select', event.target.value)
-}
+const isSelected = (color: string) => color.toLowerCase() === props.selected?.toLowerCase()
+
+// ColorPicker's hex format has no leading '#'.
+const onCustomColor = (hex: string) => emit('select', `#${hex}`)
 </script>
 
 <template>
-  <div class="swatches">
-    <span class="label">{{ label }}</span>
-    <div class="row">
+  <div
+    class="swatches"
+    role="group"
+    :aria-labelledby="labelId"
+  >
+    <div class="heading">
+      <span :id="labelId">{{ label }}</span>
+      <span class="hex tabular">{{ selected?.toUpperCase() }}</span>
+    </div>
+    <div class="chips">
       <button
         v-for="color in colors"
         :key="color"
         type="button"
-        class="swatch"
-        :class="{ selected: isSelected(color, selected) }"
+        class="chip"
+        :class="{ selected: isSelected(color) }"
         :style="{ background: color }"
-        :title="color"
-        @click="emit('select', isSelected(color, selected) ? undefined : color)"
+        :title="color.toUpperCase()"
+        :aria-label="color.toUpperCase()"
+        :aria-pressed="isSelected(color)"
+        @click="emit('select', isSelected(color) ? undefined : color)"
       />
-      <label
+      <ColorPicker
+        :model-value="selected?.slice(1)"
+        format="hex"
         class="custom"
-        title="Custom colour"
-      >
-        <input
-          type="color"
-          :value="selected ?? '#000000'"
-          @input="onCustomColor"
-        >
-        <i class="pi pi-palette" />
-      </label>
+        aria-label="Custom colour"
+        @update:model-value="onCustomColor"
+      />
     </div>
   </div>
 </template>
@@ -50,44 +59,45 @@ function onCustomColor(event: Event) {
   gap: 0.35rem;
 }
 
-.label {
-  font-size: 0.85rem;
+.heading {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
-.row {
+.hex {
+  color: var(--pencil);
+  font-weight: 400;
+}
+
+.chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 4px;
 }
 
-.swatch,
-.custom {
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 50%;
-  border: 1px solid rgb(0 0 0 / 15%);
-  cursor: pointer;
+.chip,
+.custom :deep(.p-colorpicker-preview) {
+  width: 1.25rem;
+  height: 1.25rem;
   padding: 0;
-}
-
-.swatch.selected {
-  outline: 3px solid #2563eb;
-  outline-offset: 1px;
+  border: 1px solid rgb(0 0 0 / 15%);
+  border-radius: var(--p-border-radius-xs);
+  cursor: pointer;
 }
 
 .custom {
-  position: relative;
-  display: grid;
-  place-items: center;
-  background: #fff;
-  color: #6b6b66;
+  display: flex;
 }
 
-.custom input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
+/* A colour wheel, so it reads as "pick any colour" rather than another swatch. */
+.custom :deep(.p-colorpicker-preview) {
+  background-image: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+}
+
+/* Same hue-free ring as asset tiles. */
+.chip.selected {
+  box-shadow: 0 0 0 2px var(--glaze), 0 0 0 3.5px var(--graphite);
 }
 </style>

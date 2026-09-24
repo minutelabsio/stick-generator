@@ -163,7 +163,7 @@ our own. The docs at primevue.dev describe v5, so check a component exists in
 - [x] Batch list as a ledger with a status bar. Status shown as glyph plus text.
 - [x] Editor layout: header row with meta controls, reference column, proof sheet.
 - [x] Done, next entry, and keyboard shortcuts (←/→, ⌘S, ⌘↵, `?`).
-- [ ] Slot rail and picker with pinned tint, filter, and Recent.
-- [ ] Virtualised asset grid with tint-drawn thumbnails.
+- [x] Slot rail and picker with pinned tint, filter, and Recent, over a virtualised asset grid.
+- [ ] Grid thumbnails drawn in the chosen tint.
 - [ ] Preview on hover and keyboard, commit on click or Enter, Esc to restore.
 - [ ] Empty-figure start choice on the proof.

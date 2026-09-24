@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
+import InputText from 'primevue/inputtext'
 import Menu from 'primevue/menu'
 import Message from 'primevue/message'
 import Popover from 'primevue/popover'
@@ -9,35 +12,21 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, RouterLink, useRouter } from 'vue-router'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_CHANNELS, SLOTS } from '@shared/figure'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_CHANNELS, SLOT_IDS, SLOTS } from '@shared/figure'
 import type { ColorChannelId, FigureConfig, SlotId } from '@shared/figure'
-import type { BatchDetail, EntryDetail, EntryStatus, Library } from '@shared/api-types'
-import AssetPicker from '@/components/asset-picker.vue'
+import type { BatchDetail, EntryDetail, EntryStatus, Library, LibraryAsset } from '@shared/api-types'
+import AssetGrid from '@/components/asset-grid.vue'
+import AssetThumb from '@/components/asset-thumb.vue'
 import ColorSwatches from '@/components/color-swatches.vue'
+import SlotRail from '@/components/slot-rail.vue'
 import StatusMark from '@/components/status-mark.vue'
 import { api } from '@/lib/api'
 import { initialFigure, randomFigure, selectAsset, selectColor } from '@/lib/figure-edits'
 import { createCanvas, get2dContext } from '@/lib/images'
 import { renderFigure } from '@/lib/render-figure'
+import { readRecentAssets, rememberAsset } from '@/lib/recent-assets'
 import { STATUS_OPTIONS } from '@/lib/status'
 import { MOD_KEY_LABEL, useShortcuts } from '@/lib/use-shortcuts'
-
-interface EditorSection {
-  title: string
-  slots: SlotId[]
-  channels: ColorChannelId[]
-}
-
-// Groups slots the way a designer thinks about a face, rather than one panel per slot.
-const EDITOR_SECTIONS: EditorSection[] = [
-  { title: 'Body', slots: ['body'], channels: [] },
-  { title: 'Head & skin', slots: ['head'], channels: ['skin'] },
-  { title: 'Hair', slots: ['hair'], channels: ['hair'] },
-  { title: 'Facial hair', slots: ['mustache', 'beard', 'longbeard'], channels: ['facialHair'] },
-  { title: 'Glasses', slots: ['glasses'], channels: ['glassesFrame', 'glassesLens'] },
-  { title: 'Hat', slots: ['hat'], channels: ['hat'] },
-  { title: 'Accessory', slots: ['accessory'], channels: [] },
-]
 
 const UNSAVED_CHANGES_PROMPT = 'You have unsaved changes to this figure. Leave anyway?'
 
@@ -58,6 +47,10 @@ const status = ref<EntryStatus>('new')
 const isDirty = ref(false)
 const isSaving = ref(false)
 const loadError = ref<string | null>(null)
+const activeSlot = ref<SlotId>('head')
+const assetFilter = ref('')
+const recentAssets = ref(readRecentAssets())
+const filterInput = useTemplateRef<ComponentPublicInstance>('filterInput')
 
 const assetsById = computed(() => new Map(library.value?.assets.map(asset => [asset.id, asset])))
 const highlightedAnswers = computed(() => {
@@ -73,7 +66,22 @@ const neighbours = computed(() => {
   return { previous: entryIds[index - 1], next: entryIds[index + 1], position: index + 1, total: entryIds.length }
 })
 
-const assetsForSlot = (slot: SlotId) => library.value?.assets.filter(asset => asset.slot === slot) ?? []
+const slotAssets = computed(() => library.value?.assets.filter(asset => asset.slot === activeSlot.value) ?? [])
+const filteredAssets = computed(() => {
+  const query = assetFilter.value.trim().toLowerCase()
+  return query ? slotAssets.value.filter(asset => asset.label.toLowerCase().includes(query)) : slotAssets.value
+})
+const recentSlotAssets = computed(() => (recentAssets.value[activeSlot.value] ?? [])
+  .map(id => assetsById.value.get(id))
+  .filter(asset => asset !== undefined))
+const chosenAssets = computed(() => {
+  const chosen: Partial<Record<SlotId, LibraryAsset>> = {}
+  for (const slot of SLOT_IDS) {
+    const assetId = figure.value?.assets[slot]
+    chosen[slot] = assetId ? assetsById.value.get(assetId) : undefined
+  }
+  return chosen
+})
 
 async function loadEntry(entryId: string) {
   try {
@@ -95,8 +103,10 @@ function applyEdit(edit: (current: FigureConfig, currentLibrary: Library) => Fig
   isDirty.value = true
 }
 
-const onSelectAsset = (slot: SlotId, assetId: string | undefined) =>
+function onSelectAsset(slot: SlotId, assetId: string | undefined) {
   applyEdit((current, currentLibrary) => selectAsset(current, slot, assetId, currentLibrary))
+  if (assetId) recentAssets.value = rememberAsset(recentAssets.value, slot, assetId)
+}
 const onSelectColor = (channel: ColorChannelId, color: string | undefined) =>
   applyEdit(current => selectColor(current, channel, color))
 const onRandomise = () => applyEdit((_current, currentLibrary) => randomFigure(currentLibrary))
@@ -182,12 +192,20 @@ const goTo = (entryId: string | undefined) => entryId && router.push({ name: 'en
 
 const SHORTCUT_HELP = [
   { keys: ['←', '→'], action: 'Previous or next entry' },
+  { keys: ['1', '–', '9'], action: 'Open a figure part' },
+  { keys: ['/'], action: 'Filter the open part' },
   { keys: [MOD_KEY_LABEL, 'S'], action: 'Save' },
   { keys: [MOD_KEY_LABEL, 'Enter'], action: 'Mark done and open the next entry' },
   { keys: ['?'], action: 'Show these shortcuts' },
 ]
 
+const slotShortcuts = Object.fromEntries(SLOT_IDS.map((slot, index) => [String(index + 1), () => {
+  activeSlot.value = slot
+}]))
+
 useShortcuts({
+  ...slotShortcuts,
+  '/': () => filterInput.value?.$el.focus(),
   'ArrowLeft': () => goTo(neighbours.value.previous),
   'ArrowRight': () => goTo(neighbours.value.next),
   'mod+s': save,
@@ -204,6 +222,9 @@ onBeforeRouteUpdate(async (to) => {
   return true
 })
 
+watch(activeSlot, () => {
+  assetFilter.value = ''
+})
 watch([figure, canvas], redraw, { deep: true })
 onMounted(() => loadEntry(props.entryId))
 </script>
@@ -364,35 +385,68 @@ onMounted(() => loadEntry(props.entryId))
       </section>
 
       <aside class="controls">
+        <SlotRail
+          v-model="activeSlot"
+          :chosen="chosenAssets"
+        />
         <section
-          v-for="section in EDITOR_SECTIONS"
-          :key="section.title"
-          class="card control-section"
+          class="picker"
+          :aria-label="`${SLOTS[activeSlot].label} choices`"
         >
-          <h3>{{ section.title }}</h3>
-          <div
-            v-for="slot in section.slots"
-            :key="slot"
-            class="slot"
-          >
-            <span
-              v-if="section.slots.length > 1"
-              class="slot-label"
-            >{{ SLOTS[slot].label }}</span>
-            <AssetPicker
-              :assets="assetsForSlot(slot)"
-              :selected-id="figure.assets[slot]"
-              :allow-none="!SLOTS[slot].required"
-              @select="onSelectAsset(slot, $event)"
+          <div class="picker-pinned">
+            <h2>{{ SLOTS[activeSlot].label }}</h2>
+            <ColorSwatches
+              v-for="channel in SLOTS[activeSlot].colorChannels"
+              :key="channel"
+              :label="COLOR_CHANNELS[channel].label"
+              :colors="library.palettes[COLOR_CHANNELS[channel].palette]"
+              :selected="figure.colors[channel]"
+              @select="onSelectColor(channel, $event)"
             />
+            <div class="filter">
+              <IconField>
+                <InputIcon class="pi pi-search" />
+                <InputText
+                  ref="filterInput"
+                  v-model="assetFilter"
+                  placeholder="Filter by name"
+                  :aria-label="`Filter ${SLOTS[activeSlot].label.toLowerCase()} by name`"
+                  size="small"
+                />
+              </IconField>
+              <span class="muted tabular">{{ assetFilter ? `${filteredAssets.length} of ${slotAssets.length}` : `${slotAssets.length} assets` }}</span>
+            </div>
+            <div
+              v-if="recentSlotAssets.length && !assetFilter"
+              class="recent"
+            >
+              <span class="muted">Recent</span>
+              <button
+                v-for="asset in recentSlotAssets"
+                :key="asset.id"
+                type="button"
+                class="recent-tile"
+                :class="{ selected: figure.assets[activeSlot] === asset.id }"
+                :aria-label="asset.label"
+                :title="asset.label"
+                @click="onSelectAsset(activeSlot, asset.id)"
+              >
+                <AssetThumb :asset="asset" />
+              </button>
+            </div>
           </div>
-          <ColorSwatches
-            v-for="channel in section.channels"
-            :key="channel"
-            :label="COLOR_CHANNELS[channel].label"
-            :colors="library.palettes[COLOR_CHANNELS[channel].palette]"
-            :selected="figure.colors[channel]"
-            @select="onSelectColor(channel, $event)"
+          <p
+            v-if="assetFilter && !filteredAssets.length"
+            class="muted"
+          >
+            No {{ SLOTS[activeSlot].label.toLowerCase() }} names match “{{ assetFilter }}”. Clear the filter to see all {{ slotAssets.length }}.
+          </p>
+          <AssetGrid
+            v-else
+            :assets="filteredAssets"
+            :selected-id="figure.assets[activeSlot]"
+            :allow-none="!SLOTS[activeSlot].required && !assetFilter"
+            @select="onSelectAsset(activeSlot, $event)"
           />
         </section>
       </aside>
@@ -406,7 +460,7 @@ onMounted(() => loadEntry(props.entryId))
   --crop-gap: 0.4rem;
 
   display: grid;
-  grid-template-columns: clamp(16rem, 22vw, 24rem) minmax(0, 1fr) 26rem;
+  grid-template-columns: clamp(14rem, 20vw, 24rem) minmax(0, 1fr) 32.5rem;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100vh;
 }
@@ -553,28 +607,66 @@ onMounted(() => loadEntry(props.entryId))
 }
 
 .controls {
-  padding: 1rem 1rem 1rem 0;
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: 0.75rem;
   min-height: 0;
+  padding: 1rem 1rem 0 0;
+}
+
+.slot-rail {
   overflow-y: auto;
+}
+
+.picker {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  min-height: 0;
 }
 
-.control-section {
+/* Only the grid scrolls, so the tint and filter never drift below the fold. */
+.picker-pinned {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  flex: none;
 }
 
-.control-section h3 {
-  margin: 0;
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-md);
 }
 
-.slot-label {
-  display: block;
-  margin-bottom: 0.3rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+.recent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-md);
+}
+
+.recent-tile {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0.15rem;
+  box-sizing: border-box;
+  background: var(--glaze);
+  border: 1px solid var(--rule);
+  border-radius: var(--p-border-radius-sm);
+  cursor: pointer;
+}
+
+.recent-tile.selected {
+  border-color: var(--graphite);
+  box-shadow: 0 0 0 1.5px var(--graphite);
+}
+
+.picker .asset-grid {
+  flex: 1;
+  min-height: 0;
 }
 </style>
