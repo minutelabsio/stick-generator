@@ -165,5 +165,5 @@ our own. The docs at primevue.dev describe v5, so check a component exists in
 - [x] Done, next entry, and keyboard shortcuts (←/→, ⌘S, ⌘↵, `?`).
 - [x] Slot rail and picker with pinned tint, filter, and Recent, over a virtualised asset grid.
 - [x] Grid thumbnails drawn in the chosen tint.
-- [ ] Preview on hover and keyboard, commit on click or Enter, Esc to restore.
+- [x] Preview on hover and keyboard, commit on click or Enter, Esc to restore.
 - [ ] Empty-figure start choice on the proof.

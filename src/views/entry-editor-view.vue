@@ -97,10 +97,31 @@ async function loadEntry(entryId: string) {
   }
 }
 
-function applyEdit(edit: (current: FigureConfig, currentLibrary: Library) => FigureConfig) {
+type FigureEdit = (current: FigureConfig, currentLibrary: Library) => FigureConfig
+
+// A hovered or focused choice is drawn on the proof without touching the figure, so
+// designers can flick through options and only commit the one that matches.
+const previewEdit = ref<FigureEdit | null>(null)
+const displayedFigure = computed(() => {
+  if (!figure.value || !library.value || !previewEdit.value) return figure.value
+  return previewEdit.value(figure.value, library.value)
+})
+
+function applyEdit(edit: FigureEdit) {
   if (!figure.value || !library.value) return
   figure.value = edit(figure.value, library.value)
+  previewEdit.value = null
   isDirty.value = true
+}
+
+const previewAsset = (slot: SlotId, assetId: string | undefined) => {
+  previewEdit.value = (current, currentLibrary) => selectAsset(current, slot, assetId, currentLibrary)
+}
+const previewColor = (channel: ColorChannelId, color: string) => {
+  previewEdit.value = current => selectColor(current, channel, color)
+}
+const clearPreview = () => {
+  previewEdit.value = null
 }
 
 function onSelectAsset(slot: SlotId, assetId: string | undefined) {
@@ -115,11 +136,11 @@ const onRandomise = () => applyEdit((_current, currentLibrary) => randomFigure(c
 // earlier render can never overwrite a newer one.
 let latestRenderId = 0
 async function redraw() {
-  if (!figure.value || !canvas.value) return
+  if (!displayedFigure.value || !canvas.value) return
   latestRenderId += 1
   const renderId = latestRenderId
   const offscreen = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT)
-  await renderFigure({ canvas: offscreen, figure: figure.value, assetsById: assetsById.value })
+  await renderFigure({ canvas: offscreen, figure: displayedFigure.value, assetsById: assetsById.value })
   if (renderId !== latestRenderId) return
   const context = get2dContext(canvas.value)
   context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
@@ -135,10 +156,17 @@ interface PersistOptions {
   confirmation: string
 }
 
+// The canvas may be showing a preview, so draw the committed figure before capturing it.
+async function drawCommittedFigure() {
+  clearPreview()
+  await redraw()
+}
+
 async function persist({ nextStatus, confirmation }: PersistOptions) {
   if (!canvas.value || !figure.value) return false
   isSaving.value = true
   try {
+    await drawCommittedFigure()
     await api.uploadRender(props.entryId, await canvasToPng(canvas.value))
     entry.value = await api.updateEntry(props.entryId, { figure: figure.value, status: nextStatus })
     status.value = entry.value.status
@@ -175,8 +203,9 @@ async function changeStatus(nextStatus: EntryStatus) {
   }
 }
 
-function download() {
+async function download() {
   if (!canvas.value || !entry.value) return
+  await drawCommittedFigure()
   const link = document.createElement('a')
   link.download = `${entry.value.name ?? 'stick-figure'}-${entry.value.id}.png`
   link.href = canvas.value.toDataURL('image/png')
@@ -194,6 +223,9 @@ const SHORTCUT_HELP = [
   { keys: ['←', '→'], action: 'Previous or next entry' },
   { keys: ['1', '–', '9'], action: 'Open a figure part' },
   { keys: ['/'], action: 'Filter the open part' },
+  { keys: ['↑', '↓', '←', '→'], action: 'Move through the asset grid, previewing each' },
+  { keys: ['Enter'], action: 'Use the focused asset' },
+  { keys: ['Esc'], action: 'Stop previewing' },
   { keys: [MOD_KEY_LABEL, 'S'], action: 'Save' },
   { keys: [MOD_KEY_LABEL, 'Enter'], action: 'Mark done and open the next entry' },
   { keys: ['?'], action: 'Show these shortcuts' },
@@ -209,6 +241,7 @@ useShortcuts({
   'ArrowLeft': () => goTo(neighbours.value.previous),
   'ArrowRight': () => goTo(neighbours.value.next),
   'mod+s': save,
+  'Escape': clearPreview,
   'mod+enter': markDoneAndContinue,
   '?': event => shortcutsPopover.value?.toggle(event, shortcutsButton.value?.$el),
 })
@@ -224,8 +257,9 @@ onBeforeRouteUpdate(async (to) => {
 
 watch(activeSlot, () => {
   assetFilter.value = ''
+  clearPreview()
 })
-watch([figure, canvas], redraw, { deep: true })
+watch([displayedFigure, canvas], redraw, { deep: true })
 onMounted(() => loadEntry(props.entryId))
 </script>
 
@@ -403,6 +437,8 @@ onMounted(() => loadEntry(props.entryId))
               :colors="library.palettes[COLOR_CHANNELS[channel].palette]"
               :selected="figure.colors[channel]"
               @select="onSelectColor(channel, $event)"
+              @preview="previewColor(channel, $event)"
+              @clear-preview="clearPreview"
             />
             <div class="filter">
               <IconField>
@@ -420,6 +456,8 @@ onMounted(() => loadEntry(props.entryId))
             <div
               v-if="recentSlotAssets.length && !assetFilter"
               class="recent"
+              @mouseleave="clearPreview"
+              @focusout="clearPreview"
             >
               <span class="muted">Recent</span>
               <button
@@ -430,6 +468,8 @@ onMounted(() => loadEntry(props.entryId))
                 :class="{ selected: figure.assets[activeSlot] === asset.id }"
                 :aria-label="asset.label"
                 :title="asset.label"
+                @mouseenter="previewAsset(activeSlot, asset.id)"
+                @focus="previewAsset(activeSlot, asset.id)"
                 @click="onSelectAsset(activeSlot, asset.id)"
               >
                 <AssetThumb
@@ -452,6 +492,8 @@ onMounted(() => loadEntry(props.entryId))
             :allow-none="!SLOTS[activeSlot].required && !assetFilter"
             :colors="figure.colors"
             @select="onSelectAsset(activeSlot, $event)"
+            @preview="previewAsset(activeSlot, $event)"
+            @clear-preview="clearPreview"
           />
         </section>
       </aside>

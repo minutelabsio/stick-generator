@@ -8,7 +8,11 @@ const props = defineProps<{
   selected: string | undefined
 }>()
 
-const emit = defineEmits<{ select: [color: string | undefined] }>()
+const emit = defineEmits<{
+  select: [color: string | undefined]
+  preview: [color: string]
+  clearPreview: []
+}>()
 
 const labelId = useId()
 
@@ -28,7 +32,11 @@ const onCustomColor = (hex: string) => emit('select', `#${hex}`)
       <span :id="labelId">{{ label }}</span>
       <span class="hex tabular">{{ selected?.toUpperCase() }}</span>
     </div>
-    <div class="chips">
+    <div
+      class="chips"
+      @mouseleave="emit('clearPreview')"
+      @focusout="emit('clearPreview')"
+    >
       <button
         v-for="color in colors"
         :key="color"
@@ -39,6 +47,8 @@ const onCustomColor = (hex: string) => emit('select', `#${hex}`)
         :title="color.toUpperCase()"
         :aria-label="color.toUpperCase()"
         :aria-pressed="isSelected(color)"
+        @mouseenter="emit('preview', color)"
+        @focus="emit('preview', color)"
         @click="emit('select', isSelected(color) ? undefined : color)"
       />
       <ColorPicker
