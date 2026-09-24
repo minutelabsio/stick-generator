@@ -48,6 +48,8 @@ const isDirty = ref(false)
 const isSaving = ref(false)
 const loadError = ref<string | null>(null)
 const activeSlot = ref<SlotId>('head')
+// An entry with no saved figure offers a starting point on the proof until any edit.
+const needsStartingPoint = ref(false)
 const assetFilter = ref('')
 const recentAssets = ref(readRecentAssets())
 const filterInput = useTemplateRef<ComponentPublicInstance>('filterInput')
@@ -90,6 +92,7 @@ async function loadEntry(entryId: string) {
     entry.value = await api.getEntry(entryId)
     batch.value = await api.getBatch(entry.value.batchId)
     figure.value = entry.value.figure ?? initialFigure(library.value)
+    needsStartingPoint.value = entry.value.figure === null
     status.value = entry.value.status
     isDirty.value = false
   } catch (error) {
@@ -111,6 +114,7 @@ function applyEdit(edit: FigureEdit) {
   if (!figure.value || !library.value) return
   figure.value = edit(figure.value, library.value)
   previewEdit.value = null
+  needsStartingPoint.value = false
   isDirty.value = true
 }
 
@@ -131,6 +135,9 @@ function onSelectAsset(slot: SlotId, assetId: string | undefined) {
 const onSelectColor = (channel: ColorChannelId, color: string | undefined) =>
   applyEdit(current => selectColor(current, channel, color))
 const onRandomise = () => applyEdit((_current, currentLibrary) => randomFigure(currentLibrary))
+const startBlank = () => {
+  needsStartingPoint.value = false
+}
 
 // Renders offscreen and only copies the latest request to the screen, so a slow
 // earlier render can never overwrite a newer one.
@@ -415,6 +422,24 @@ onMounted(() => loadEntry(props.entryId))
             role="img"
             :aria-label="`Stick figure for ${entry.name ?? 'this entry'}`"
           />
+          <div
+            v-if="needsStartingPoint"
+            class="start"
+          >
+            <p>No figure saved for {{ entry.name ?? 'this entry' }} yet.</p>
+            <div class="start-actions">
+              <Button
+                label="Start from random"
+                icon="pi pi-sparkles"
+                @click="onRandomise"
+              />
+              <Button
+                label="Start blank"
+                severity="secondary"
+                @click="startBlank"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -451,7 +476,7 @@ onMounted(() => loadEntry(props.entryId))
                   size="small"
                 />
               </IconField>
-              <span class="muted tabular">{{ assetFilter ? `${filteredAssets.length} of ${slotAssets.length}` : `${slotAssets.length} assets` }}</span>
+              <span class="muted tabular">{{ assetFilter ? `${filteredAssets.length} of ${slotAssets.length}` : `${slotAssets.length} ${slotAssets.length === 1 ? 'asset' : 'assets'}` }}</span>
             </div>
             <div
               v-if="recentSlotAssets.length && !assetFilter"
@@ -628,6 +653,7 @@ onMounted(() => loadEntry(props.entryId))
   --mark: linear-gradient(var(--pencil), var(--pencil));
   --mark-length: calc(var(--proof-margin) - var(--crop-gap));
 
+  position: relative;
   box-sizing: border-box;
   height: 100%;
   max-width: 100%;
@@ -651,6 +677,26 @@ onMounted(() => loadEntry(props.entryId))
   aspect-ratio: 710 / 943;
   object-fit: contain;
   background: var(--glaze);
+}
+
+.start {
+  position: absolute;
+  inset: var(--proof-margin);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgb(255 255 255 / 85%);
+}
+
+.start p {
+  margin: 0;
+}
+
+.start-actions {
+  display: flex;
+  gap: 0.75rem;
 }
 
 .controls {

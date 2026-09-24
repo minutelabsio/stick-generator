@@ -7,7 +7,7 @@ Planning for the stick-figure generator rewrite ("v2").
 | [v1-functionality.md](./v1-functionality.md) | reference | What the current site actually does, its data layout, and its known problems |
 | [v2-architecture.md](./v2-architecture.md) | planned | Target stack, data model, storage layout, auth, renderer design |
 | [v2-public-intake.md](./v2-public-intake.md) | planned | Follower intake via one expiring invite link per batch, with the spam and abuse controls |
-| [v2-workspace-design.md](./v2-workspace-design.md) | partial | Visual and interaction design for the batch list, batch page, and figure editor |
+| [v2-workspace-design.md](./v2-workspace-design.md) | implemented | Visual and interaction design for the batch list, batch page, and figure editor |
 | [v2-phased-plan.md](./v2-phased-plan.md) | partial | The build, broken into shippable phases with exit criteria |
 
 Read them in that order. The v1 doc is the requirements baseline. Anything v2 drops or

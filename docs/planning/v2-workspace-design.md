@@ -1,5 +1,5 @@
 ---
-status: partial
+status: implemented
 created: 2026-09-24
 updated: 2026-09-24
 summary: "Visual and interaction design for the designer workspace (batch list, batch page, figure editor)."
@@ -166,4 +166,4 @@ our own. The docs at primevue.dev describe v5, so check a component exists in
 - [x] Slot rail and picker with pinned tint, filter, and Recent, over a virtualised asset grid.
 - [x] Grid thumbnails drawn in the chosen tint.
 - [x] Preview on hover and keyboard, commit on click or Enter, Esc to restore.
-- [ ] Empty-figure start choice on the proof.
+- [x] Empty-figure start choice on the proof.
