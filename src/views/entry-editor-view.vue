@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
+import Menu from 'primevue/menu'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
+import Toolbar from 'primevue/toolbar'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, RouterLink, useRouter } from 'vue-router'
 import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_CHANNELS, SLOTS } from '@shared/figure'
 import type { ColorChannelId, FigureConfig, SlotId } from '@shared/figure'
 import type { BatchDetail, EntryDetail, EntryStatus, Library } from '@shared/api-types'
 import AssetPicker from '@/components/asset-picker.vue'
 import ColorSwatches from '@/components/color-swatches.vue'
+import StatusMark from '@/components/status-mark.vue'
 import { api } from '@/lib/api'
 import { initialFigure, randomFigure, selectAsset, selectColor } from '@/lib/figure-edits'
 import { createCanvas, get2dContext } from '@/lib/images'
@@ -40,6 +43,7 @@ const props = defineProps<{ entryId: string }>()
 const router = useRouter()
 const toast = useToast()
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
+const moreMenu = useTemplateRef<InstanceType<typeof Menu>>('moreMenu')
 
 const library = ref<Library | null>(null)
 const entry = ref<EntryDetail | null>(null)
@@ -61,7 +65,7 @@ const highlightedAnswers = computed(() => {
 const neighbours = computed(() => {
   const entryIds = batch.value?.entries.map(summary => summary.id) ?? []
   const index = entryIds.indexOf(props.entryId)
-  return { previous: entryIds[index - 1], next: entryIds[index + 1] }
+  return { previous: entryIds[index - 1], next: entryIds[index + 1], position: index + 1, total: entryIds.length }
 })
 
 const assetsForSlot = (slot: SlotId) => library.value?.assets.filter(asset => asset.slot === slot) ?? []
@@ -145,6 +149,11 @@ function download() {
   link.click()
 }
 
+const moreActions = [
+  { label: 'Download PNG', icon: 'pi pi-download', command: download },
+  { label: 'Randomise figure', icon: 'pi pi-sparkles', command: onRandomise },
+]
+
 const goTo = (entryId: string | undefined) => entryId && router.push({ name: 'entry', params: { entryId } })
 
 const confirmLeave = () => !isDirty.value || window.confirm(UNSAVED_CHANGES_PROMPT)
@@ -170,18 +179,83 @@ onMounted(() => loadEntry(props.entryId))
     </Message>
 
     <template v-if="entry && figure && library">
-      <aside class="reference card">
-        <RouterLink
-          v-if="batch"
-          :to="{ name: 'batch', params: { batchId: batch.id } }"
-          class="back"
-        >
-          <i class="pi pi-arrow-left" /> {{ batch.name }}
-        </RouterLink>
-        <h2>{{ entry.name ?? 'Unnamed' }}</h2>
-        <p class="muted">
-          {{ entry.email }}
-        </p>
+      <Toolbar class="editor-header">
+        <template #start>
+          <RouterLink
+            v-if="batch"
+            :to="{ name: 'batch', params: { batchId: batch.id } }"
+            class="back"
+          >
+            <i class="pi pi-angle-left" /> {{ batch.name }}
+          </RouterLink>
+          <h1>{{ entry.name ?? 'Unnamed' }}</h1>
+          <nav
+            class="entry-nav"
+            aria-label="Entries in this batch"
+          >
+            <Button
+              icon="pi pi-angle-left"
+              text
+              severity="secondary"
+              :disabled="!neighbours.previous"
+              aria-label="Previous entry"
+              @click="goTo(neighbours.previous)"
+            />
+            <span
+              v-if="neighbours.total"
+              class="tabular muted"
+            >{{ neighbours.position }} of {{ neighbours.total }}</span>
+            <Button
+              icon="pi pi-angle-right"
+              text
+              severity="secondary"
+              :disabled="!neighbours.next"
+              aria-label="Next entry"
+              @click="goTo(neighbours.next)"
+            />
+          </nav>
+        </template>
+        <template #end>
+          <Select
+            :model-value="status"
+            :options="STATUS_OPTIONS"
+            option-label="label"
+            option-value="value"
+            aria-label="Status"
+            @update:model-value="changeStatus"
+          >
+            <template #value="{ value }">
+              <StatusMark :status="value" />
+            </template>
+            <template #option="{ option }">
+              <StatusMark :status="option.value" />
+            </template>
+          </Select>
+          <Button
+            icon="pi pi-ellipsis-h"
+            text
+            severity="secondary"
+            aria-label="More actions"
+            aria-haspopup="true"
+            @click="moreMenu?.toggle($event)"
+          />
+          <Menu
+            ref="moreMenu"
+            :model="moreActions"
+            popup
+          />
+          <Button
+            label="Save"
+            severity="secondary"
+            :class="{ unsaved: isDirty }"
+            :aria-label="isDirty ? 'Save (unsaved changes)' : 'Save'"
+            :loading="isSaving"
+            @click="save"
+          />
+        </template>
+      </Toolbar>
+
+      <aside class="reference">
         <img
           v-if="entry.likenessUrl"
           :src="entry.likenessUrl"
@@ -194,6 +268,9 @@ onMounted(() => loadEntry(props.entryId))
         >
           No photo submitted
         </p>
+        <p class="muted">
+          {{ entry.email }}
+        </p>
         <dl class="answers">
           <template
             v-for="item in highlightedAnswers"
@@ -205,54 +282,17 @@ onMounted(() => loadEntry(props.entryId))
         </dl>
       </aside>
 
-      <section class="stage">
-        <div class="toolbar">
-          <Button
-            icon="pi pi-chevron-left"
-            text
-            :disabled="!neighbours.previous"
-            title="Previous entry"
-            @click="goTo(neighbours.previous)"
-          />
-          <Select
-            :model-value="status"
-            :options="STATUS_OPTIONS"
-            option-label="label"
-            option-value="value"
-            @update:model-value="changeStatus"
-          />
-          <Button
-            label="Randomise"
-            icon="pi pi-sparkles"
-            severity="secondary"
-            @click="onRandomise"
-          />
-          <Button
-            label="Download"
-            icon="pi pi-download"
-            severity="secondary"
-            @click="download"
-          />
-          <Button
-            :label="isDirty ? 'Save*' : 'Save'"
-            icon="pi pi-save"
-            :loading="isSaving"
-            @click="save"
-          />
-          <Button
-            icon="pi pi-chevron-right"
-            text
-            :disabled="!neighbours.next"
-            title="Next entry"
-            @click="goTo(neighbours.next)"
+      <section class="proof-column">
+        <div class="proof">
+          <canvas
+            ref="canvas"
+            :width="CANVAS_WIDTH"
+            :height="CANVAS_HEIGHT"
+            class="proof-sheet"
+            role="img"
+            :aria-label="`Stick figure for ${entry.name ?? 'this entry'}`"
           />
         </div>
-        <canvas
-          ref="canvas"
-          :width="CANVAS_WIDTH"
-          :height="CANVAS_HEIGHT"
-          class="figure-canvas"
-        />
       </section>
 
       <aside class="controls">
@@ -294,41 +334,94 @@ onMounted(() => loadEntry(props.entryId))
 
 <style scoped>
 .editor {
+  --proof-margin: 1.5rem;
+  --crop-gap: 0.4rem;
+
   display: grid;
-  grid-template-columns: 18rem minmax(0, 1fr) 24rem;
-  gap: 1rem;
-  padding: 1rem;
+  grid-template-columns: clamp(16rem, 22vw, 24rem) minmax(0, 1fr) 26rem;
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100vh;
-  box-sizing: border-box;
 }
 
-.reference,
-.controls {
-  overflow-y: auto;
+.editor > .p-message,
+.editor-header {
+  grid-column: 1 / -1;
+}
+
+.editor-header {
+  padding: 0.5rem 1rem;
+  background: var(--glaze);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+}
+
+.editor-header :deep(.p-toolbar-start) {
+  gap: 1rem;
+}
+
+.editor-header h1 {
+  font-size: var(--text-lg);
 }
 
 .back {
-  display: inline-block;
-  margin-bottom: 0.75rem;
-  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--text-md);
+  text-decoration: none;
+}
+
+.entry-nav {
+  display: flex;
+  align-items: center;
+  font-size: var(--text-md);
+}
+
+.unsaved::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.15rem;
+  border-radius: 50%;
+  background: var(--unsaved);
+}
+
+.reference {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: calc(var(--proof-margin) + 0.75rem) 0 1rem 1rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.reference p {
+  margin: 0;
 }
 
 .likeness {
-  width: 100%;
-  border-radius: 0.5rem;
+  flex: 1 1 auto;
+  min-height: 12rem;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: top;
 }
 
 .no-photo {
   padding: 3rem 0;
   text-align: center;
-  border: 1px dashed #d0d0ca;
-  border-radius: 0.5rem;
+  border: 1px dashed var(--rule);
+  border-radius: var(--p-border-radius-md);
+}
+
+.answers {
+  margin: 0;
 }
 
 .answers dt {
   margin-top: 0.75rem;
-  font-size: 0.85rem;
-  color: #6b6b66;
+  font-size: var(--text-md);
+  color: var(--pencil);
 }
 
 .answers dd {
@@ -336,33 +429,47 @@ onMounted(() => loadEntry(props.entryId))
   font-weight: 600;
 }
 
-.stage {
+.proof-column {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  min-height: 0;
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
   justify-content: center;
+  min-height: 0;
+  padding: 0.75rem 0.5rem;
 }
 
-.figure-canvas {
-  flex: 1;
-  min-height: 0;
+/* Hairline crop marks sit just outside each corner of the sheet, like a print proof. */
+.proof {
+  --mark: linear-gradient(var(--pencil), var(--pencil));
+  --mark-length: calc(var(--proof-margin) - var(--crop-gap));
+
+  box-sizing: border-box;
+  height: 100%;
   max-width: 100%;
+  padding: var(--proof-margin);
+  background:
+    var(--mark) left 0 top var(--proof-margin) / var(--mark-length) 1px,
+    var(--mark) right 0 top var(--proof-margin) / var(--mark-length) 1px,
+    var(--mark) left 0 bottom var(--proof-margin) / var(--mark-length) 1px,
+    var(--mark) right 0 bottom var(--proof-margin) / var(--mark-length) 1px,
+    var(--mark) left var(--proof-margin) top 0 / 1px var(--mark-length),
+    var(--mark) right var(--proof-margin) top 0 / 1px var(--mark-length),
+    var(--mark) left var(--proof-margin) bottom 0 / 1px var(--mark-length),
+    var(--mark) right var(--proof-margin) bottom 0 / 1px var(--mark-length);
+  background-repeat: no-repeat;
+}
+
+.proof-sheet {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 710 / 943;
   object-fit: contain;
-  background: #fff;
-  border: 1px solid #e3e3df;
-  border-radius: 0.75rem;
+  background: var(--glaze);
 }
 
 .controls {
+  padding: 1rem 1rem 1rem 0;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
