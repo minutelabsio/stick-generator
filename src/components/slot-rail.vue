@@ -12,15 +12,20 @@ const props = defineProps<{
 
 const activeSlot = defineModel<SlotId>({ required: true })
 
-const SLOT_GROUPS: { label: string, slots: SlotId[] }[] = [
+const SLOT_GROUPS = [
   { label: 'Figure', slots: ['body', 'head', 'hair', 'hat'] },
   { label: 'Facial hair', slots: ['mustache', 'beard', 'longbeard'] },
   { label: 'Extras', slots: ['glasses', 'accessory'] },
-]
+] satisfies { label: string, slots: SlotId[] }[]
 
-// Listbox types its slot options as any; these give them back their type.
+// Objects rather than bare ids, so Listbox exposes "Long beard" to assistive tech, not "longbeard".
+const RAIL_GROUPS = SLOT_GROUPS.map(group => ({
+  label: group.label,
+  options: group.slots.map(slot => ({ id: slot, label: SLOTS[slot].label })),
+}))
+
+// Listbox types its slot options as any; this gives them back their type.
 const chosenFor = (slot: SlotId) => props.chosen[slot]
-const labelFor = (slot: SlotId) => SLOTS[slot].label
 
 // Arrow keys switch slots as focus moves, but the mouse only switches on click:
 // Listbox's hover-to-focus would otherwise change slot as the pointer passes over.
@@ -35,9 +40,11 @@ function onChange(slot: SlotId | null) {
 <template>
   <Listbox
     :model-value="activeSlot"
-    :options="SLOT_GROUPS"
+    :options="RAIL_GROUPS"
     option-group-label="label"
-    option-group-children="slots"
+    option-group-children="options"
+    option-label="label"
+    option-value="id"
     select-on-focus
     :focus-on-hover="false"
     scroll-height="none"
@@ -51,14 +58,14 @@ function onChange(slot: SlotId | null) {
     <template #option="{ option }">
       <span
         class="thumb"
-        :class="{ empty: !chosenFor(option) }"
+        :class="{ empty: !chosenFor(option.id) }"
       >
         <AssetThumb
-          :asset="chosenFor(option)"
+          :asset="chosenFor(option.id)"
           :colors="colors"
         />
       </span>
-      <span>{{ labelFor(option) }}</span>
+      <span>{{ option.label }}</span>
     </template>
   </Listbox>
 </template>
