@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { SLOT_IDS } from '@shared/figure'
 import type { FigureConfig } from '@shared/figure'
+import { STICK_RIG } from '@shared/stick-rig'
 import type { LibraryAsset } from '@shared/api-types'
 import { drawSteps } from './render-figure'
+
+const SLOT_IDS = STICK_RIG.slots.map(slot => slot.id)
 
 // Every slot gets an asset with every part, so each layer in the stack resolves.
 const ASSETS_BY_ID = new Map(SLOT_IDS.map((slot): [string, LibraryAsset] => [slot, {
@@ -26,7 +28,7 @@ const FULL_FIGURE: FigureConfig = {
 
 describe('drawSteps', () => {
   it('draws the layers back to front in the v1 order, each with its colour', () => {
-    expect(drawSteps({ figure: FULL_FIGURE, assetsById: ASSETS_BY_ID })).toEqual([
+    expect(drawSteps({ rig: STICK_RIG, figure: FULL_FIGURE, assetsById: ASSETS_BY_ID })).toEqual([
       { url: 'hat/backMask', color: '#000003' },
       { url: 'hat/backLine', color: undefined },
       { url: 'hair/backMask', color: '#000002' },
@@ -52,7 +54,7 @@ describe('drawSteps', () => {
     const hairWithoutBack: LibraryAsset = { id: 'short-hair', slot: 'hair', label: 'Short hair', partUrls: { line: 'short/line', mask: 'short/mask' } }
     const figure: FigureConfig = { assets: { head: 'head', hair: 'short-hair' }, colors: { skin: '#000001' } }
 
-    expect(drawSteps({ figure, assetsById: new Map([...ASSETS_BY_ID, ['short-hair', hairWithoutBack]]) })).toEqual([
+    expect(drawSteps({ rig: STICK_RIG, figure, assetsById: new Map([...ASSETS_BY_ID, ['short-hair', hairWithoutBack]]) })).toEqual([
       { url: 'head/mask', color: '#000001' },
       { url: 'head/line', color: undefined },
       { url: 'short/mask', color: undefined },

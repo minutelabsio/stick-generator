@@ -1,12 +1,11 @@
 import { z } from 'zod'
 import type { Library, LibraryAsset } from '../../shared/api-types'
-import type { SlotId } from '../../shared/figure'
 import type { Rig } from '../../shared/rig'
 import { fileUrl } from '../files'
 
 interface AssetRow {
   id: string
-  slot: SlotId
+  slot: string
   label: string
   parts: string
 }

@@ -1,38 +1,35 @@
 <script setup lang="ts">
 import Listbox from 'primevue/listbox'
-import { SLOTS } from '@shared/figure'
-import type { FigureConfig, SlotId } from '@shared/figure'
+import { computed } from 'vue'
+import type { FigureConfig } from '@shared/figure'
+import type { Rig } from '@shared/rig'
 import type { LibraryAsset } from '@shared/api-types'
 import AssetThumb from '@/components/asset-thumb.vue'
 
 const props = defineProps<{
-  chosen: Partial<Record<SlotId, LibraryAsset>>
+  rig: Rig
+  chosen: Partial<Record<string, LibraryAsset>>
   colors: FigureConfig['colors']
 }>()
 
-const activeSlot = defineModel<SlotId>({ required: true })
-
-const SLOT_GROUPS = [
-  { label: 'Figure', slots: ['body', 'head', 'hair', 'hat'] },
-  { label: 'Facial hair', slots: ['mustache', 'beard', 'longbeard'] },
-  { label: 'Extras', slots: ['glasses', 'accessory'] },
-] satisfies { label: string, slots: SlotId[] }[]
+const activeSlot = defineModel<string>({ required: true })
 
 // Objects rather than bare ids, so Listbox exposes "Long beard" to assistive tech, not "longbeard".
-const RAIL_GROUPS = SLOT_GROUPS.map(group => ({
-  label: group.label,
-  options: group.slots.map(slot => ({ id: slot, label: SLOTS[slot].label })),
-}))
+// The rig lists a group's slots together, so grouping keeps the rig's slot order.
+const railGroups = computed(() => [...new Set(props.rig.slots.map(slot => slot.group))].map(group => ({
+  label: group,
+  options: props.rig.slots.filter(slot => slot.group === group).map(slot => ({ id: slot.id, label: slot.label })),
+})))
 
 // Listbox types its slot options as any; this gives them back their type.
-const chosenFor = (slot: SlotId) => props.chosen[slot]
+const chosenFor = (slot: string) => props.chosen[slot]
 
 // Arrow keys switch slots as focus moves, but the mouse only switches on click:
 // Listbox's hover-to-focus would otherwise change slot as the pointer passes over.
 
 // Listbox clears a single selection when its selected option is clicked again. The rail
 // always has an open slot, so that "clear" is ignored.
-function onChange(slot: SlotId | null) {
+function onChange(slot: string | null) {
   if (slot) activeSlot.value = slot
 }
 </script>
@@ -40,7 +37,7 @@ function onChange(slot: SlotId | null) {
 <template>
   <Listbox
     :model-value="activeSlot"
-    :options="RAIL_GROUPS"
+    :options="railGroups"
     option-group-label="label"
     option-group-children="options"
     option-label="label"
@@ -62,6 +59,7 @@ function onChange(slot: SlotId | null) {
       >
         <AssetThumb
           :asset="chosenFor(option.id)"
+          :rig="rig"
           :colors="colors"
         />
       </span>

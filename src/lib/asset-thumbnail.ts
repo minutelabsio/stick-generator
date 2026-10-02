@@ -1,5 +1,5 @@
-import { LAYERS } from '@shared/figure'
-import type { AssetPart, FigureConfig, SlotId } from '@shared/figure'
+import type { FigureConfig } from '@shared/figure'
+import type { AssetPart, Rig } from '@shared/rig'
 import type { LibraryAsset } from '@shared/api-types'
 import { createCanvas, get2dContext, loadImage } from './images'
 
@@ -37,8 +37,8 @@ const thumbnails = new Map<string, Promise<string>>()
 
 // Draws the asset in the figure's current colours, so designers browse shapes the way
 // they will look rather than as grey line art.
-export function assetThumbnail(asset: LibraryAsset, colors: FigureConfig['colors'] = {}) {
-  const tints = partTints(asset.slot, colors)
+export function assetThumbnail(asset: LibraryAsset, rig: Rig, colors: FigureConfig['colors'] = {}) {
+  const tints = partTints({ rig, slotId: asset.slot, colors })
   const key = `${asset.id}:${JSON.stringify(tints)}`
   const cached = thumbnails.get(key)
   if (cached) return cached
@@ -48,9 +48,9 @@ export function assetThumbnail(asset: LibraryAsset, colors: FigureConfig['colors
   return thumbnail
 }
 
-function partTints(slot: SlotId, colors: FigureConfig['colors']): PartTints {
-  return Object.fromEntries(LAYERS.flatMap(({ slot: layerSlot, part, colorRole }) =>
-    (layerSlot === slot && colorRole ? [[part, colors[colorRole] ?? null]] : [])))
+function partTints({ rig, slotId, colors }: { rig: Rig, slotId: string, colors: FigureConfig['colors'] }): PartTints {
+  return Object.fromEntries(rig.layers.flatMap(({ slot, part, colorRole }) =>
+    (slot === slotId && colorRole ? [[part, colors[colorRole] ?? null]] : [])))
 }
 
 function evictOldestThumbnails() {

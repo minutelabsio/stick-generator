@@ -34,6 +34,7 @@ describe('Rig', () => {
     ['a colour role with a missing palette', withRole('hat', { palette: 'shoes' }), 'Colour role "hat" uses palette "shoes", which does not exist.'],
     ['a colour role following a follower', withRole('hair', { followsRole: 'facialHair' }), 'Colour role "facialHair" must follow a role that follows nothing.'],
     ['a colour role no slot uses', { ...STICK_RIG, colorRoles: [...STICK_RIG.colorRoles, { id: 'shoes', label: 'Shoes', palette: 'hat' }] }, 'Colour role "shoes" is not used by any slot.'],
+    ['a group split by another group', withSlot('beard', { group: 'Figure' }), 'The slots in group "Figure" must be listed together.'],
     ['two slots with one id', { ...STICK_RIG, slots: [...STICK_RIG.slots, ...STICK_RIG.slots.slice(0, 1)] }, 'Slot "body" is listed twice.'],
     ['an editor opening on a missing slot', { ...STICK_RIG, initialSlot: 'wings' }, 'The editor opens on slot "wings", which does not exist.'],
   ])('refuses %s', (_case, rig, message) => {

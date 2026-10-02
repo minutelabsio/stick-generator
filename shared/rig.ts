@@ -27,7 +27,8 @@ export type ColorRole = z.infer<typeof ColorRole>
 const Slot = z.object({
   id: RigId,
   label: z.string().min(1),
-  // The heading the slot sits under in the editor's slot rail.
+  // The heading the slot sits under in the editor's slot rail. A group's slots are
+  // listed together, so the rail order matches the 1–9 shortcuts.
   group: z.string().min(1),
   // A required slot has no "none" choice, and a new figure starts with its first asset.
   required: z.boolean(),
@@ -85,6 +86,7 @@ function rigProblems(rig: RigShape) {
   const index = indexRig(rig)
   return [
     ...duplicateProblems(rig),
+    ...splitGroups(rig).map(group => `The slots in group "${group}" must be listed together.`),
     ...(index.slotIds.has(rig.initialSlot) ? [] : [`The editor opens on slot "${rig.initialSlot}", which does not exist.`]),
     ...rig.colorRoles.flatMap(role => colorRoleProblems(role, index)),
     ...rig.slots.flatMap(slot => slotProblems(slot, index)),
@@ -128,6 +130,11 @@ function layerProblems(layer: Layer, { slotIds, rolesById }: RigIndex) {
     ...(slotIds.has(layer.slot) ? [] : [`A layer uses slot "${layer.slot}", which does not exist.`]),
     ...(!layer.colorRole || rolesById.has(layer.colorRole) ? [] : [`A layer uses colour role "${layer.colorRole}", which does not exist.`]),
   ]
+}
+
+function splitGroups(rig: RigShape) {
+  const groupRuns = rig.slots.map(slot => slot.group).filter((group, index, groups) => group !== groups[index - 1])
+  return duplicates(groupRuns)
 }
 
 const duplicates = (ids: string[]) => [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))]

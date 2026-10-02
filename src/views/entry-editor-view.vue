@@ -12,8 +12,8 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, RouterLink, useRouter } from 'vue-router'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_ROLES, SLOT_IDS, SLOTS } from '@shared/figure'
-import type { ColorRoleId, FigureConfig, SlotId } from '@shared/figure'
+import { colorRoleById, slotById } from '@shared/rig'
+import type { FigureConfig } from '@shared/figure'
 import type { BatchDetail, EntryDetail, EntryStatus, Library, LibraryAsset } from '@shared/api-types'
 import AssetGrid from '@/components/asset-grid.vue'
 import AssetThumb from '@/components/asset-thumb.vue'
@@ -29,6 +29,8 @@ import { STATUS_OPTIONS } from '@/lib/status'
 import { MOD_KEY_LABEL, useShortcuts } from '@/lib/use-shortcuts'
 
 const UNSAVED_CHANGES_PROMPT = 'You have unsaved changes to this figure. Leave anyway?'
+// Digit keys 1–9 open the slots in rail order.
+const SLOT_SHORTCUT_COUNT = 9
 
 const props = defineProps<{ entryId: string }>()
 
@@ -47,13 +49,27 @@ const status = ref<EntryStatus>('new')
 const isDirty = ref(false)
 const isSaving = ref(false)
 const loadError = ref<string | null>(null)
-const activeSlot = ref<SlotId>('head')
+// Unset until a designer picks a slot, so the rig's opening slot applies.
+const pickedSlotId = ref<string>()
 // An entry with no saved figure offers a starting point on the proof until any edit.
 const needsStartingPoint = ref(false)
 const assetFilter = ref('')
 const recentAssets = ref(readRecentAssets())
 const filterInput = useTemplateRef<ComponentPublicInstance>('filterInput')
 
+const rig = computed(() => library.value?.rig)
+const activeSlotId = computed({
+  get: () => pickedSlotId.value ?? rig.value?.initialSlot ?? '',
+  set: (slotId: string) => {
+    pickedSlotId.value = slotId
+  },
+})
+const activeSlot = computed(() => (rig.value ? slotById(rig.value, activeSlotId.value) : undefined))
+const activeColorRoles = computed(() => {
+  const currentRig = rig.value
+  if (!currentRig || !activeSlot.value) return []
+  return activeSlot.value.colorRoles.flatMap(roleId => colorRoleById(currentRig, roleId) ?? [])
+})
 const assetsById = computed(() => new Map(library.value?.assets.map(asset => [asset.id, asset])))
 const highlightedAnswers = computed(() => {
   if (!entry.value || !batch.value) return []
@@ -68,19 +84,19 @@ const neighbours = computed(() => {
   return { previous: entryIds[index - 1], next: entryIds[index + 1], position: index + 1, total: entryIds.length }
 })
 
-const slotAssets = computed(() => library.value?.assets.filter(asset => asset.slot === activeSlot.value) ?? [])
+const slotAssets = computed(() => library.value?.assets.filter(asset => asset.slot === activeSlotId.value) ?? [])
 const filteredAssets = computed(() => {
   const query = assetFilter.value.trim().toLowerCase()
   return query ? slotAssets.value.filter(asset => asset.label.toLowerCase().includes(query)) : slotAssets.value
 })
-const recentSlotAssets = computed(() => (recentAssets.value[activeSlot.value] ?? [])
+const recentSlotAssets = computed(() => (recentAssets.value[activeSlotId.value] ?? [])
   .map(id => assetsById.value.get(id))
   .filter(asset => asset !== undefined))
 const chosenAssets = computed(() => {
-  const chosen: Partial<Record<SlotId, LibraryAsset>> = {}
-  for (const slot of SLOT_IDS) {
-    const assetId = figure.value?.assets[slot]
-    chosen[slot] = assetId ? assetsById.value.get(assetId) : undefined
+  const chosen: Partial<Record<string, LibraryAsset>> = {}
+  for (const { id } of rig.value?.slots ?? []) {
+    const assetId = figure.value?.assets[id]
+    chosen[id] = assetId ? assetsById.value.get(assetId) : undefined
   }
   return chosen
 })
@@ -118,21 +134,21 @@ function applyEdit(edit: FigureEdit) {
   isDirty.value = true
 }
 
-const previewAsset = (slot: SlotId, assetId: string | undefined) => {
+const previewAsset = (slot: string, assetId: string | undefined) => {
   previewEdit.value = (current, currentLibrary) => selectAsset(current, slot, assetId, currentLibrary)
 }
-const previewColor = (role: ColorRoleId, color: string) => {
+const previewColor = (role: string, color: string) => {
   previewEdit.value = current => selectColor(current, role, color)
 }
 const clearPreview = () => {
   previewEdit.value = null
 }
 
-function onSelectAsset(slot: SlotId, assetId: string | undefined) {
+function onSelectAsset(slot: string, assetId: string | undefined) {
   applyEdit((current, currentLibrary) => selectAsset(current, slot, assetId, currentLibrary))
   if (assetId) recentAssets.value = rememberAsset(recentAssets.value, slot, assetId)
 }
-const onSelectColor = (role: ColorRoleId, color: string | undefined) =>
+const onSelectColor = (role: string, color: string | undefined) =>
   applyEdit(current => selectColor(current, role, color))
 const onRandomise = () => applyEdit((_current, currentLibrary) => randomFigure(currentLibrary))
 const startBlank = () => {
@@ -143,14 +159,15 @@ const startBlank = () => {
 // earlier render can never overwrite a newer one.
 let latestRenderId = 0
 async function redraw() {
-  if (!displayedFigure.value || !canvas.value) return
+  if (!displayedFigure.value || !canvas.value || !rig.value) return
   latestRenderId += 1
   const renderId = latestRenderId
-  const offscreen = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT)
-  await renderFigure({ canvas: offscreen, figure: displayedFigure.value, assetsById: assetsById.value })
+  const { width, height } = rig.value.canvas
+  const offscreen = createCanvas(width, height)
+  await renderFigure({ canvas: offscreen, rig: rig.value, figure: displayedFigure.value, assetsById: assetsById.value })
   if (renderId !== latestRenderId) return
   const context = get2dContext(canvas.value)
-  context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+  context.clearRect(0, 0, width, height)
   context.drawImage(offscreen, 0, 0)
 }
 
@@ -238,8 +255,10 @@ const SHORTCUT_HELP = [
   { keys: ['?'], action: 'Show these shortcuts' },
 ]
 
-const slotShortcuts = Object.fromEntries(SLOT_IDS.map((slot, index) => [String(index + 1), () => {
-  activeSlot.value = slot
+// Bound before the rig loads, so each key looks its slot up when pressed.
+const slotShortcuts = Object.fromEntries(Array.from({ length: SLOT_SHORTCUT_COUNT }, (_key, index) => [String(index + 1), () => {
+  const slot = rig.value?.slots[index]
+  if (slot) activeSlotId.value = slot.id
 }]))
 
 useShortcuts({
@@ -262,7 +281,7 @@ onBeforeRouteUpdate(async (to) => {
   return true
 })
 
-watch(activeSlot, () => {
+watch(activeSlotId, () => {
   assetFilter.value = ''
   clearPreview()
 })
@@ -279,7 +298,7 @@ onMounted(() => loadEntry(props.entryId))
       {{ loadError }}
     </Message>
 
-    <template v-if="entry && figure && library">
+    <template v-if="entry && figure && library && activeSlot">
       <Toolbar class="editor-header">
         <template #start>
           <RouterLink
@@ -416,9 +435,10 @@ onMounted(() => loadEntry(props.entryId))
         <div class="proof">
           <canvas
             ref="canvas"
-            :width="CANVAS_WIDTH"
-            :height="CANVAS_HEIGHT"
+            :width="library.rig.canvas.width"
+            :height="library.rig.canvas.height"
             class="proof-sheet"
+            :style="{ aspectRatio: `${library.rig.canvas.width} / ${library.rig.canvas.height}` }"
             role="img"
             :aria-label="`Stick figure for ${entry.name ?? 'this entry'}`"
           />
@@ -445,24 +465,25 @@ onMounted(() => loadEntry(props.entryId))
 
       <aside class="controls">
         <SlotRail
-          v-model="activeSlot"
+          v-model="activeSlotId"
+          :rig="library.rig"
           :chosen="chosenAssets"
           :colors="figure.colors"
         />
         <section
           class="picker"
-          :aria-label="`${SLOTS[activeSlot].label} choices`"
+          :aria-label="`${activeSlot.label} choices`"
         >
           <div class="picker-pinned">
-            <h2>{{ SLOTS[activeSlot].label }}</h2>
+            <h2>{{ activeSlot.label }}</h2>
             <ColorSwatches
-              v-for="role in SLOTS[activeSlot].colorRoles"
-              :key="role"
-              :label="COLOR_ROLES[role].label"
-              :colors="library.palettes[COLOR_ROLES[role].palette] ?? []"
-              :selected="figure.colors[role]"
-              @select="onSelectColor(role, $event)"
-              @preview="previewColor(role, $event)"
+              v-for="role in activeColorRoles"
+              :key="role.id"
+              :label="role.label"
+              :colors="library.palettes[role.palette] ?? []"
+              :selected="figure.colors[role.id]"
+              @select="onSelectColor(role.id, $event)"
+              @preview="previewColor(role.id, $event)"
               @clear-preview="clearPreview"
             />
             <div class="filter">
@@ -472,7 +493,7 @@ onMounted(() => loadEntry(props.entryId))
                   ref="filterInput"
                   v-model="assetFilter"
                   placeholder="Filter by name"
-                  :aria-label="`Filter ${SLOTS[activeSlot].label.toLowerCase()} by name`"
+                  :aria-label="`Filter ${activeSlot.label.toLowerCase()} by name`"
                   size="small"
                 />
               </IconField>
@@ -490,15 +511,16 @@ onMounted(() => loadEntry(props.entryId))
                 :key="asset.id"
                 type="button"
                 class="recent-tile"
-                :class="{ selected: figure.assets[activeSlot] === asset.id }"
+                :class="{ selected: figure.assets[activeSlotId] === asset.id }"
                 :aria-label="asset.label"
                 :title="asset.label"
-                @mouseenter="previewAsset(activeSlot, asset.id)"
-                @focus="previewAsset(activeSlot, asset.id)"
-                @click="onSelectAsset(activeSlot, asset.id)"
+                @mouseenter="previewAsset(activeSlotId, asset.id)"
+                @focus="previewAsset(activeSlotId, asset.id)"
+                @click="onSelectAsset(activeSlotId, asset.id)"
               >
                 <AssetThumb
                   :asset="asset"
+                  :rig="library.rig"
                   :colors="figure.colors"
                 />
               </button>
@@ -508,16 +530,17 @@ onMounted(() => loadEntry(props.entryId))
             v-if="assetFilter && !filteredAssets.length"
             class="muted"
           >
-            No {{ SLOTS[activeSlot].label.toLowerCase() }} names match “{{ assetFilter }}”. Clear the filter to see all {{ slotAssets.length }}.
+            No {{ activeSlot.label.toLowerCase() }} names match “{{ assetFilter }}”. Clear the filter to see all {{ slotAssets.length }}.
           </p>
           <AssetGrid
             v-else
             :assets="filteredAssets"
-            :selected-id="figure.assets[activeSlot]"
-            :allow-none="!SLOTS[activeSlot].required && !assetFilter"
+            :selected-id="figure.assets[activeSlotId]"
+            :allow-none="!activeSlot.required && !assetFilter"
+            :rig="library.rig"
             :colors="figure.colors"
-            @select="onSelectAsset(activeSlot, $event)"
-            @preview="previewAsset(activeSlot, $event)"
+            @select="onSelectAsset(activeSlotId, $event)"
+            @preview="previewAsset(activeSlotId, $event)"
             @clear-preview="clearPreview"
           />
         </section>
@@ -674,7 +697,6 @@ onMounted(() => loadEntry(props.entryId))
   display: block;
   height: 100%;
   max-width: 100%;
-  aspect-ratio: 710 / 943;
   object-fit: contain;
   background: var(--glaze);
 }

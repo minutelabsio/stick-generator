@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { FigureConfig } from '@shared/figure'
+import type { Rig } from '@shared/rig'
 import type { LibraryAsset } from '@shared/api-types'
 import { assetThumbnail } from '@/lib/asset-thumbnail'
 
 // An empty slot passes no asset and renders nothing.
 const props = defineProps<{
   asset: LibraryAsset | undefined
+  rig: Rig
   colors?: FigureConfig['colors']
 }>()
 
@@ -22,7 +24,7 @@ watch(() => [props.asset, props.colors] as const, async ([asset, colors]) => {
     src.value = ''
     return
   }
-  const thumbnail = await assetThumbnail(asset, colors)
+  const thumbnail = await assetThumbnail(asset, props.rig, colors)
   if (request === latestRequest) src.value = thumbnail
 }, { immediate: true, deep: true })
 </script>

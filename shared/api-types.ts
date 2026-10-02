@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { FigureConfig } from './figure'
-import type { AssetPart, SlotId } from './figure'
-import type { Rig } from './rig'
+import type { AssetPart, Rig } from './rig'
 
 export const ENTRY_STATUSES = ['new', 'in_progress', 'done', 'skipped'] as const
 export type EntryStatus = typeof ENTRY_STATUSES[number]
@@ -49,7 +48,7 @@ export interface EntryDetail extends EntrySummary {
 
 export interface LibraryAsset {
   id: string
-  slot: SlotId
+  slot: string
   label: string
   partUrls: Partial<Record<AssetPart, string>>
 }

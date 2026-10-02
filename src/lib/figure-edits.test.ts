@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { SLOT_IDS } from '@shared/figure'
 import { STICK_RIG } from '@shared/stick-rig'
 import type { Library, LibraryAsset } from '@shared/api-types'
 import { initialFigure, randomFigure, selectAsset } from './figure-edits'
 
-const asset = (slot: LibraryAsset['slot'], number: number): LibraryAsset =>
+const SLOT_IDS = STICK_RIG.slots.map(slot => slot.id)
+
+const asset = (slot: string, number: number): LibraryAsset =>
   ({ id: `${slot}-${number}`, slot, label: `${slot} ${number}`, partUrls: { line: `/${slot}-${number}.png` } })
 
 const LIBRARY: Library = {
@@ -36,7 +37,7 @@ describe('initialFigure', () => {
 })
 
 describe('selectAsset', () => {
-  const pick = (slot: LibraryAsset['slot'], colors = {}) =>
+  const pick = (slot: string, colors = {}) =>
     selectAsset({ assets: {}, colors }, slot, `${slot}-2`, LIBRARY)
 
   it('colours hair with the default brown rather than the palette\'s first swatch', () => {

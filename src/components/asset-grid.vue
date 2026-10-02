@@ -3,6 +3,7 @@ import VirtualScroller from 'primevue/virtualscroller'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import type { FigureConfig } from '@shared/figure'
+import type { Rig } from '@shared/rig'
 import type { LibraryAsset } from '@shared/api-types'
 import AssetThumb from '@/components/asset-thumb.vue'
 
@@ -10,6 +11,7 @@ const props = defineProps<{
   assets: LibraryAsset[]
   selectedId: string | undefined
   allowNone: boolean
+  rig: Rig
   colors: FigureConfig['colors']
 }>()
 
@@ -115,6 +117,7 @@ function onFocusOut(event: FocusEvent) {
           <AssetThumb
             v-if="tile"
             :asset="tile"
+            :rig="rig"
             :colors="colors"
           />
           <i
