@@ -84,24 +84,29 @@ the phases still need to do:
 passed through the code, not constants imported by it. **Nothing a designer or follower
 sees changes.** Design: [v2-channels-and-rigs.md](./v2-channels-and-rigs.md#the-rig).
 
-- [ ] Rename "colour channel" to **colour role** (`COLOR_CHANNELS` to `COLOR_ROLES`,
+- [x] Rename "colour channel" to **colour role** (`COLOR_CHANNELS` to `COLOR_ROLES`,
       `SlotDefinition.colorChannels` to `colorRoles`, `Layer.tint` to `colorRole`). A
       `refactor` commit on its own. Stored figure JSON keeps its keys.
-- [ ] Before changing behaviour, a test in `shared/` pins today's slots, layer order,
+- [x] Before changing behaviour, a test in `shared/` pins today's slots, layer order,
       colour roles, and palettes, so the rig can be checked against them.
-- [ ] `Rig` zod schema in `shared/`, with today's constants expressed as `STICK_RIG`.
+- [x] `Rig` zod schema in `shared/`, with today's constants expressed as `STICK_RIG`.
       The parity test now checks `STICK_RIG`.
-- [ ] Editor behaviour keyed to named slots moves into rig fields: random fill chance,
+- [x] Editor behaviour keyed to named slots moves into rig fields: random fill chance,
       default colours, facial hair following hair, starting choices, and slot rail groups.
-- [ ] The renderer, thumbnails, figure edits, slot rail, and editor take a rig instead
+- [x] The renderer, thumbnails, figure edits, slot rail, and editor take a rig instead
       of importing constants.
-- [ ] `GET /library` returns the rig (always `STICK_RIG` for now), and the SPA draws with it.
-- [ ] `FigureConfig` keys become plain strings. `PATCH /entries/:id` checks slots and
+- [x] `GET /library` returns the rig (always `STICK_RIG` for now), and the SPA draws with it.
+- [x] `FigureConfig` keys become plain strings. `PATCH /entries/:id` checks slots and
       colour roles against the rig, with a test that an unknown slot is rejected.
+
+Done 2026-10-02 on the `figure-rig` branch. The rig is `shared/rig.ts`, and the stick
+figure is `shared/stick-rig.ts`.
 
 **Exit:** `pnpm run check` is green and nothing in `api/` or `src/` names a specific
 slot or colour role. A fixed figure renders identically before and after (compare the PNGs),
-and randomise, the slot rail, and colour defaults behave as before.
+and randomise, the slot rail, and colour defaults behave as before. Met: canvas PNGs of
+two fixed figures were byte-identical before and after, and tests pin the editor rules,
+draw order, and structure.
 
 ---
 

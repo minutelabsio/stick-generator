@@ -1,5 +1,5 @@
 ---
-status: planned
+status: partial
 created: 2026-10-02
 updated: 2026-10-02
 summary: "Figure rig as data, then channels that each own their batches, assets, palettes, and rig."
@@ -37,20 +37,21 @@ categories.
 
 ## The rig
 
-One zod schema in `shared/` describes a rig, and today's constants become one value
-of it, `STICK_RIG`. Everything that reads `SLOTS`, `LAYERS`, `COLOR_CHANNELS`, or the
-canvas constants receives a rig instead.
+One zod schema, `Rig` in `shared/rig.ts`, describes a rig. The stick figure is one
+value of it, `STICK_RIG` in `shared/stick-rig.ts`. The renderer, thumbnails, figure
+edits, slot rail, and editor all receive a rig rather than importing constants.
 
 ```ts
-// Shape sketch. Field names settle during implementation.
+// Built in Phase 0.5. The schema in shared/rig.ts is the source of truth.
 interface Rig {
   canvas: { width: number, height: number }
-  palettes: { id: string, label: string }[]
+  initialSlot: string       // the slot the editor opens on
+  palettes: string[]        // palette ids
   colorRoles: {
     id: string
     label: string
     palette: string
-    defaultColor?: string   // today's DEFAULT_COLORS
+    defaultColor?: string   // used instead of the palette's first swatch
     followsRole?: string    // facial hair follows hair until set on its own
   }[]
   slots: {
@@ -58,13 +59,24 @@ interface Rig {
     label: string
     group: string           // the slot rail heading
     required: boolean
-    parts: AssetPart[]      // which uploads the asset screen offers
-    colorRoles: string[]
+    colorRoles: string[]    // in the order the editor shows their pickers
     randomFillChance: number
   }[]
   layers: { slot: string, part: AssetPart, colorRole?: string }[]  // back to front
 }
 ```
+
+A slot's parts (which uploads the asset screen offers) are not listed separately. The
+layers already say which parts a slot draws, and a second list could disagree.
+
+Validation refuses any rig that would draw wrongly or strand figures:
+- ids are unique, and every reference (layer to slot, layer and slot to colour role,
+  colour role to palette, `initialSlot`) points at something that exists
+- each `(slot, part)` layer appears once, and every slot has a `line` layer
+- a slot's `colorRoles` are exactly the roles its layers use, and every role is used
+- a following role follows a role that follows nothing, so there are no chains
+- a required slot has a `randomFillChance` of 1
+- a group's slots are listed together, so rail order matches the 1–9 shortcuts
 
 Why the draw order is a list of layers and not a z-index per slot: one slot can sit at
 several points in the stack. Hair and hat draw their back parts behind the body and
@@ -79,6 +91,7 @@ Behaviour that is written as code against named slots today moves into rig field
 | `facialHair` copies `hair` in `randomFigure` and `fillMissingColors` | `colorRole.followsRole` |
 | `initialFigure` picks the first body and head, and a random skin | Every required slot starts with its first asset, and its colour roles with a random swatch |
 | `SLOT_GROUPS` in `slot-rail.vue` | `slot.group` |
+| The editor opens on `'head'` | `rig.initialSlot` |
 
 The tinting model stays fixed: a line part painted with a colour role is recoloured,
 and a painted mask part is a flat fill under the line art. A per-layer blend mode can
@@ -93,6 +106,8 @@ be added as an optional field later if a style needs it.
   to the entry's channel, checked in one query.
 - The library response carries the rig, so the SPA draws with whatever the server
   says. Until channels exist, the server always returns `STICK_RIG`.
+- Palettes in the library response are keyed by the rig's palette ids. Each one is
+  present even with no swatches yet.
 
 ## Channels
 
