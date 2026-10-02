@@ -1,5 +1,5 @@
-import { COLOR_CHANNELS, SLOT_IDS, SLOTS } from '@shared/figure'
-import type { ColorChannelId, FigureConfig, SlotId } from '@shared/figure'
+import { COLOR_ROLES, SLOT_IDS, SLOTS } from '@shared/figure'
+import type { ColorRoleId, FigureConfig, SlotId } from '@shared/figure'
 import type { Library } from '@shared/api-types'
 
 // Chance an optional slot is filled when randomising. Most people don't wear a hat.
@@ -17,7 +17,7 @@ const RANDOM_FILL_CHANCE: Record<SlotId, number> = {
 
 // Colours applied when a slot is first picked. Palette order is display order, and its
 // first entries (white hair, pale blue frames) make poor starting points.
-const DEFAULT_COLORS: Partial<Record<ColorChannelId, string>> = {
+const DEFAULT_COLORS: Partial<Record<ColorRoleId, string>> = {
   hair: '#63503C',
   glassesFrame: '#1A1A1A',
   glassesLens: '#FCF4F0',
@@ -40,11 +40,11 @@ export function initialFigure(library: Library): FigureConfig {
 export function selectAsset(figure: FigureConfig, slot: SlotId, assetId: string | undefined, library: Library): FigureConfig {
   const assets = { ...figure.assets, [slot]: assetId }
   if (!assetId) return { ...figure, assets }
-  return { assets, colors: fillMissingColors(figure.colors, SLOTS[slot].colorChannels, library) }
+  return { assets, colors: fillMissingColors(figure.colors, SLOTS[slot].colorRoles, library) }
 }
 
-export function selectColor(figure: FigureConfig, channel: ColorChannelId, color: string | undefined): FigureConfig {
-  return { ...figure, colors: { ...figure.colors, [channel]: color } }
+export function selectColor(figure: FigureConfig, role: ColorRoleId, color: string | undefined): FigureConfig {
+  return { ...figure, colors: { ...figure.colors, [role]: color } }
 }
 
 export function randomFigure(library: Library): FigureConfig {
@@ -52,19 +52,19 @@ export function randomFigure(library: Library): FigureConfig {
     .filter(slot => Math.random() < RANDOM_FILL_CHANCE[slot])
     .map(slot => [slot, pickRandom(assetsForSlot(library, slot))?.id] as const)
   const colors = Object.fromEntries(
-    Object.entries(COLOR_CHANNELS).map(([channel, { palette }]) => [channel, pickRandom(library.palettes[palette])]),
+    Object.entries(COLOR_ROLES).map(([role, { palette }]) => [role, pickRandom(library.palettes[palette])]),
   )
   return { assets: Object.fromEntries(assetEntries), colors: { ...colors, facialHair: colors.hair } }
 }
 
 // An untinted mask would draw as an invisible fill, so picking an asset also picks a colour.
 // Facial hair follows the hair colour, the way people usually look.
-function fillMissingColors(colors: FigureConfig['colors'], channels: ColorChannelId[], library: Library) {
-  const missing = channels.filter(channel => !colors[channel])
-  const defaults = missing.map((channel) => {
-    const fallback = DEFAULT_COLORS[channel] ?? library.palettes[COLOR_CHANNELS[channel].palette][0]
-    const color = channel === 'facialHair' ? (colors.hair ?? DEFAULT_COLORS.hair) : fallback
-    return [channel, color] as const
+function fillMissingColors(colors: FigureConfig['colors'], roles: ColorRoleId[], library: Library) {
+  const missing = roles.filter(role => !colors[role])
+  const defaults = missing.map((role) => {
+    const fallback = DEFAULT_COLORS[role] ?? library.palettes[COLOR_ROLES[role].palette][0]
+    const color = role === 'facialHair' ? (colors.hair ?? DEFAULT_COLORS.hair) : fallback
+    return [role, color] as const
   })
   return { ...colors, ...Object.fromEntries(defaults) }
 }

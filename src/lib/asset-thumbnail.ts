@@ -49,8 +49,8 @@ export function assetThumbnail(asset: LibraryAsset, colors: FigureConfig['colors
 }
 
 function partTints(slot: SlotId, colors: FigureConfig['colors']): PartTints {
-  return Object.fromEntries(LAYERS.flatMap(({ slot: layerSlot, part, tint }) =>
-    (layerSlot === slot && tint ? [[part, colors[tint] ?? null]] : [])))
+  return Object.fromEntries(LAYERS.flatMap(({ slot: layerSlot, part, colorRole }) =>
+    (layerSlot === slot && colorRole ? [[part, colors[colorRole] ?? null]] : [])))
 }
 
 function evictOldestThumbnails() {

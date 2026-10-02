@@ -11,7 +11,7 @@ interface RenderOptions {
 
 interface ResolvedLayer {
   image: HTMLImageElement
-  tint: string | undefined
+  color: string | undefined
 }
 
 // Drawn in LAYERS order. Images load in parallel first so layers never draw out of order.
@@ -23,7 +23,7 @@ export async function renderFigure({ canvas, figure, assetsById }: RenderOptions
   context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
   for (const layer of resolved) {
     if (!layer) continue
-    const source = layer.tint ? tintImage(scratch, layer.image, layer.tint) : layer.image
+    const source = layer.color ? tintImage(scratch, layer.image, layer.color) : layer.image
     context.drawImage(source, 0, 0)
   }
 }
@@ -32,8 +32,8 @@ async function resolveLayer({ layer, figure, assetsById }: Omit<RenderOptions, '
   const assetId = figure.assets[layer.slot]
   const url = assetId ? assetsById.get(assetId)?.partUrls[layer.part] : undefined
   if (!url) return null
-  const tint = layer.tint ? figure.colors[layer.tint] : undefined
-  return { image: await loadImage(url), tint } satisfies ResolvedLayer
+  const color = layer.colorRole ? figure.colors[layer.colorRole] : undefined
+  return { image: await loadImage(url), color } satisfies ResolvedLayer
 }
 
 // Keeps the image's alpha and replaces its colour: a flat fill for masks, recoloured

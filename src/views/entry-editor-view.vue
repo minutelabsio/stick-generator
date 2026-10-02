@@ -12,8 +12,8 @@ import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, RouterLink, useRouter } from 'vue-router'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_CHANNELS, SLOT_IDS, SLOTS } from '@shared/figure'
-import type { ColorChannelId, FigureConfig, SlotId } from '@shared/figure'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_ROLES, SLOT_IDS, SLOTS } from '@shared/figure'
+import type { ColorRoleId, FigureConfig, SlotId } from '@shared/figure'
 import type { BatchDetail, EntryDetail, EntryStatus, Library, LibraryAsset } from '@shared/api-types'
 import AssetGrid from '@/components/asset-grid.vue'
 import AssetThumb from '@/components/asset-thumb.vue'
@@ -121,8 +121,8 @@ function applyEdit(edit: FigureEdit) {
 const previewAsset = (slot: SlotId, assetId: string | undefined) => {
   previewEdit.value = (current, currentLibrary) => selectAsset(current, slot, assetId, currentLibrary)
 }
-const previewColor = (channel: ColorChannelId, color: string) => {
-  previewEdit.value = current => selectColor(current, channel, color)
+const previewColor = (role: ColorRoleId, color: string) => {
+  previewEdit.value = current => selectColor(current, role, color)
 }
 const clearPreview = () => {
   previewEdit.value = null
@@ -132,8 +132,8 @@ function onSelectAsset(slot: SlotId, assetId: string | undefined) {
   applyEdit((current, currentLibrary) => selectAsset(current, slot, assetId, currentLibrary))
   if (assetId) recentAssets.value = rememberAsset(recentAssets.value, slot, assetId)
 }
-const onSelectColor = (channel: ColorChannelId, color: string | undefined) =>
-  applyEdit(current => selectColor(current, channel, color))
+const onSelectColor = (role: ColorRoleId, color: string | undefined) =>
+  applyEdit(current => selectColor(current, role, color))
 const onRandomise = () => applyEdit((_current, currentLibrary) => randomFigure(currentLibrary))
 const startBlank = () => {
   needsStartingPoint.value = false
@@ -456,13 +456,13 @@ onMounted(() => loadEntry(props.entryId))
           <div class="picker-pinned">
             <h2>{{ SLOTS[activeSlot].label }}</h2>
             <ColorSwatches
-              v-for="channel in SLOTS[activeSlot].colorChannels"
-              :key="channel"
-              :label="COLOR_CHANNELS[channel].label"
-              :colors="library.palettes[COLOR_CHANNELS[channel].palette]"
-              :selected="figure.colors[channel]"
-              @select="onSelectColor(channel, $event)"
-              @preview="previewColor(channel, $event)"
+              v-for="role in SLOTS[activeSlot].colorRoles"
+              :key="role"
+              :label="COLOR_ROLES[role].label"
+              :colors="library.palettes[COLOR_ROLES[role].palette]"
+              :selected="figure.colors[role]"
+              @select="onSelectColor(role, $event)"
+              @preview="previewColor(role, $event)"
               @clear-preview="clearPreview"
             />
             <div class="filter">
