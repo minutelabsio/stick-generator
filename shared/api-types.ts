@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { FigureConfig } from './figure'
-import type { AssetPart, PaletteId, SlotId } from './figure'
+import type { AssetPart, SlotId } from './figure'
+import type { Rig } from './rig'
 
 export const ENTRY_STATUSES = ['new', 'in_progress', 'done', 'skipped'] as const
 export type EntryStatus = typeof ENTRY_STATUSES[number]
@@ -55,7 +56,9 @@ export interface LibraryAsset {
 
 export interface Library {
   assets: LibraryAsset[]
-  palettes: Record<PaletteId, string[]>
+  // Keyed by the rig's palette ids.
+  palettes: Record<string, string[]>
+  rig: Rig
 }
 
 export const CreateBatchRequest = z.object({

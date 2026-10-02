@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { Library, LibraryAsset } from '../../shared/api-types'
-import type { PaletteId, SlotId } from '../../shared/figure'
+import type { SlotId } from '../../shared/figure'
+import type { Rig } from '../../shared/rig'
 import { fileUrl } from '../files'
 
 interface AssetRow {
@@ -11,14 +12,19 @@ interface AssetRow {
 }
 
 interface PaletteRow {
-  id: PaletteId
+  id: string
   colors: string
 }
 
 const StoredParts = z.partialRecord(z.enum(['line', 'mask', 'backLine', 'backMask']), z.string())
 const StoredColors = z.array(z.string())
 
-export function createLibraryService(db: D1Database) {
+interface LibraryDependencies {
+  db: D1Database
+  rig: Rig
+}
+
+export function createLibraryService({ db, rig }: LibraryDependencies) {
   return {
     async get(): Promise<Library> {
       const [assetRows, paletteRows] = await Promise.all([
@@ -27,7 +33,8 @@ export function createLibraryService(db: D1Database) {
       ])
       return {
         assets: assetRows.results.map(toLibraryAsset),
-        palettes: toPalettes(paletteRows.results),
+        palettes: toPalettes(rig, paletteRows.results),
+        rig,
       }
     },
   }
@@ -39,12 +46,8 @@ function toLibraryAsset(row: AssetRow): LibraryAsset {
   return { id: row.id, slot: row.slot, label: row.label, partUrls }
 }
 
-function toPalettes(rows: PaletteRow[]): Library['palettes'] {
+// Every palette the rig names is present, empty until a designer adds swatches.
+function toPalettes(rig: Rig, rows: PaletteRow[]): Library['palettes'] {
   const colorsById = new Map(rows.map(row => [row.id, StoredColors.parse(JSON.parse(row.colors))]))
-  return {
-    skin: colorsById.get('skin') ?? [],
-    hair: colorsById.get('hair') ?? [],
-    hat: colorsById.get('hat') ?? [],
-    glasses: colorsById.get('glasses') ?? [],
-  }
+  return Object.fromEntries(rig.palettes.map(paletteId => [paletteId, colorsById.get(paletteId) ?? []]))
 }

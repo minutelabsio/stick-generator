@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SLOT_IDS } from '@shared/figure'
+import { STICK_RIG } from '@shared/stick-rig'
 import type { Library, LibraryAsset } from '@shared/api-types'
 import { initialFigure, randomFigure, selectAsset } from './figure-edits'
 
@@ -14,6 +15,7 @@ const LIBRARY: Library = {
     hat: ['#000004', '#000005'],
     glasses: ['#000006', '#000007'],
   },
+  rig: STICK_RIG,
 }
 
 const stubRandom = (value: number) => vi.spyOn(Math, 'random').mockReturnValue(value)
