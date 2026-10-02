@@ -1,7 +1,7 @@
 ---
 status: planned
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-10-02
 summary: "Target design for v2. One Worker with Hono API and SPA, D1 for records, R2 for images, Access for auth, batch invite-link intake."
 ---
 
@@ -69,6 +69,10 @@ docs/planning/
 ```
 
 ## Data model (D1)
+
+> Channels add a `channels` table and a `channel_id` on `groups`, `assets`, and
+> `palettes`, and drop the fixed slot and palette lists. See
+> [v2-channels-and-rigs.md](./v2-channels-and-rigs.md#data-model).
 
 ```sql
 CREATE TABLE groups (
@@ -157,6 +161,9 @@ shape by resolving each URL to an imported asset ID.
 ## Renderer
 
 The render order is **data**, not code. It lives in one shared module:
+
+> Phase 0.5 goes further: slots, layers, colour roles (formerly colour channels), and
+> the canvas become a per-channel rig. See [v2-channels-and-rigs.md](./v2-channels-and-rigs.md#the-rig).
 
 ```ts
 // shared/layers.ts: back to front, same order as v1

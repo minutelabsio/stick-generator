@@ -1,13 +1,14 @@
 ---
 status: partial
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-10-02
 summary: "Phased build plan for v2, from scaffold to cutover, with exit criteria per phase."
 ---
 
 # v2 phased plan
 
-Design: [v2-architecture.md](./v2-architecture.md) and [v2-public-intake.md](./v2-public-intake.md).
+Design: [v2-architecture.md](./v2-architecture.md), [v2-public-intake.md](./v2-public-intake.md),
+and [v2-channels-and-rigs.md](./v2-channels-and-rigs.md).
 Baseline: [v1-functionality.md](./v1-functionality.md).
 
 Each phase ends in something deployable to staging and usable by a designer. v1 keeps
@@ -16,8 +17,9 @@ own D1. It **reads** the existing R2 buckets under a new `v2/` prefix and never 
 to v1 keys.
 
 ```
-P0 Groundwork ─► P1 Assets ─► P2 Editor ─► P3 Batch intake ─► P4 Migrate + cutover ─► P5 Workflow polish ─► P6 Hardening & output
-                     └──────────── designers can start testing here ────────────┘
+P0 Groundwork ─► P0.5 Rig as data ─► P0.6 Channels ─► P1 Assets ─► P2 Editor ─► P3 Batch intake
+                                                          └────── designers can start testing here ──────┘
+             ─► P4 Migrate + cutover ─► P5 Workflow polish ─► P6 Hardening & output
 ```
 
 ---
@@ -76,23 +78,80 @@ the phases still need to do:
 
 ---
 
+## Phase 0.5: Figure rig as data
+
+**Goal:** the drawing structure (slots, layers, colour roles, palettes, canvas) is data
+passed through the code, not constants imported by it. **Nothing a designer or follower
+sees changes.** Design: [v2-channels-and-rigs.md](./v2-channels-and-rigs.md#the-rig).
+
+- [ ] Rename "colour channel" to **colour role** (`COLOR_CHANNELS` to `COLOR_ROLES`,
+      `SlotDefinition.colorChannels` to `colorRoles`, `Layer.tint` to `colorRole`). A
+      `refactor` commit on its own. Stored figure JSON keeps its keys.
+- [ ] Before changing behaviour, a test in `shared/` pins today's slots, layer order,
+      colour roles, and palettes, so the rig can be checked against them.
+- [ ] `Rig` zod schema in `shared/`, with today's constants expressed as `STICK_RIG`.
+      The parity test now checks `STICK_RIG`.
+- [ ] Editor behaviour keyed to named slots moves into rig fields: random fill chance,
+      default colours, facial hair following hair, starting choices, and slot rail groups.
+- [ ] The renderer, thumbnails, figure edits, slot rail, and editor take a rig instead
+      of importing constants.
+- [ ] `GET /library` returns the rig (always `STICK_RIG` for now), and the SPA draws with it.
+- [ ] `FigureConfig` keys become plain strings. `PATCH /entries/:id` checks slots and
+      colour roles against the rig, with a test that an unknown slot is rejected.
+
+**Exit:** `pnpm run check` is green and nothing in `api/` or `src/` names a specific
+slot or colour role. A fixed figure renders identically before and after (compare the PNGs),
+and randomise, the slot rail, and colour defaults behave as before.
+
+---
+
+## Phase 0.6: Channels
+
+**Goal:** each channel has its own batches, subscribers, assets, palettes, and rig, and
+admins switch between channels. No access control: every admin sees every channel.
+Design: [v2-channels-and-rigs.md](./v2-channels-and-rigs.md#channels).
+
+- [ ] Schema: `channels` table (with `rig` JSON and `rig_revision`), `channel_id` on
+      `groups`, `assets`, and `palettes`, palettes keyed by `(channel_id, id)`. Drop
+      the fixed slot and palette CHECKs. Fold into `0001` if nothing is deployed yet,
+      otherwise add a migration.
+- [ ] Seed two channels in dev, each with its own palettes and assets.
+- [ ] API: `GET /channels`, channel-scoped batch list and create, channel-scoped
+      library (assets, palettes, rig), and `channelId` on entry detail.
+- [ ] `PATCH /entries/:id` rejects assets from another channel, checked in one query.
+- [ ] SPA: channel switcher (remembers the last channel), batch list under
+      `/c/:channelSlug`, new batches created in the current channel.
+- [ ] Join page shows the channel's name.
+- [ ] Tests: batch lists don't leak across channels, a figure that mixes channels is
+      rejected, and two channels can each have a `hair` palette.
+
+**Exit:** with two seeded channels, a designer switches channels and sees only that
+channel's batches and assets. An entry in one channel cannot be saved with another
+channel's asset.
+
+---
+
 ## Phase 1: Asset library
 
 **Goal:** designers manage every layer asset and palette in the UI, with no filename rules.
 
-- [ ] `shared/layers.ts` (slot definitions + render order) and `shared/figure.ts` (FigureConfig zod).
+Everything in this phase is per channel: assets, palettes, and the import target.
+
+- [x] Slot definitions, render order, and FigureConfig zod. Done in `shared/figure.ts`
+      for the prototype, and turned into the rig in Phase 0.5.
 - [ ] Asset API: list, create, patch (label, sort, archive), `PUT` part upload. Validate
       PNG, 710×943, has alpha, and a size cap.
 - [ ] **Assets screen**: grid per slot. "New asset" dialog with named drop targets for
       *line art*, *colour mask*, *back line*, and *back mask*. The slot definition
-      decides which targets appear. Show a live tinted preview before saving.
+      decides which targets appear (`slot.parts` in the rig). Show a live tinted preview before saving.
       Replace part, archive/restore, and drag to reorder.
 - [ ] Thumbnails: when uploading, crop to the bounding box in the browser once and
       upload `thumb-r<n>.png`. Pickers never crop at runtime.
 - [ ] Palettes screen: edit the swatch lists for skin, hair, hat, and glasses, then save.
 - [ ] `scripts/import-v1-assets.ts`: walks R2 `assets/<Category>/` and applies the v1
       naming rules (`mask` prefix, `b` suffix, per-slot prefixes) **once**. It creates
-      asset rows and copies objects to `v2/assets/…`. Seeds palettes from the v1 arrays.
+      asset rows in the original channel and copies objects to `v2/assets/…`. Seeds that
+      channel's palettes from the v1 arrays.
 - [ ] Tests: asset upload validation. The importer's filename parsing, including the
       `b`-in-name case that v1 gets wrong.
 
@@ -175,7 +234,8 @@ confirms that nothing outside `/join` and `/api/public/*` answers without Access
 **Goal:** all historical work lives in v2, and v1 is retired.
 
 - [ ] `scripts/migrate-v1.ts` (idempotent and re-runnable), for each KV group key:
-      - create a group with `source = 'v1'`, and build its `questions` from the CSV headers
+      - create a group with `source = 'v1'` in the original channel, and build its
+        `questions` from the CSV headers
       - create entries, **keeping the v1 `id`** so render filenames stay traceable
       - copy `likeness/<group>/<Filename>` to `v2/likeness/<entryId>.<ext>`
       - store the CSV row as `answers`
@@ -237,6 +297,14 @@ on its own.
       `likeness_key`, drops IP hashes, and clears the allowlist.
 
 **Exit:** depends on which items are picked up. Each has its own acceptance check in its PR.
+
+---
+
+## Backlog
+
+- [ ] **Admin-editable rigs:** admins add slots and place their layers in the draw
+      order, per channel. Not scheduled. The rules it must follow are in
+      [v2-channels-and-rigs.md](./v2-channels-and-rigs.md#later-admin-editable-rigs-backlog).
 
 ---
 
