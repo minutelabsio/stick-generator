@@ -2,13 +2,14 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { UpdateEntryRequest } from '../../shared/api-types'
+import { STICK_RIG } from '../../shared/stick-rig'
 import type { AppEnv } from '../app'
 import { requireFound } from '../http-errors'
 import { createEntryService } from '../services/entry-service'
 
 const ENTRY_NOT_FOUND = 'That entry does not exist. It may have been removed.'
 
-const entryService = (c: Context<AppEnv>) => createEntryService({ db: c.env.DB, figureBucket: c.env.FIGURE_BUCKET })
+const entryService = (c: Context<AppEnv>) => createEntryService({ db: c.env.DB, figureBucket: c.env.FIGURE_BUCKET, rig: STICK_RIG })
 
 export const entryRoutes = new Hono<AppEnv>()
   .get('/:entryId', async (c) => {

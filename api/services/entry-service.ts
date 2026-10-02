@@ -1,7 +1,9 @@
 import { z } from 'zod'
-import { FigureConfig } from '../../shared/figure'
+import { FigureConfig, unknownFigureKeys } from '../../shared/figure'
+import type { Rig } from '../../shared/rig'
 import type { EntryDetail, EntryStatus, UpdateEntryRequest } from '../../shared/api-types'
 import { fileUrl } from '../files'
+import { httpError } from '../http-errors'
 import { toEntrySummary } from './batch-service'
 
 interface EntryRow {
@@ -23,11 +25,12 @@ interface EntryRow {
 interface EntryServiceDependencies {
   db: D1Database
   figureBucket: R2Bucket
+  rig: Rig
 }
 
 const StoredAnswers = z.record(z.string(), z.string())
 
-export function createEntryService({ db, figureBucket }: EntryServiceDependencies) {
+export function createEntryService({ db, figureBucket, rig }: EntryServiceDependencies) {
   const findRow = (entryId: string) => db.prepare('SELECT * FROM entries WHERE id = ?').bind(entryId).first<EntryRow>()
 
   const get = async (entryId: string): Promise<EntryDetail | null> => {
@@ -39,6 +42,7 @@ export function createEntryService({ db, figureBucket }: EntryServiceDependencie
     get,
 
     async update(entryId: string, changes: UpdateEntryRequest, updatedBy: string): Promise<EntryDetail | null> {
+      if (changes.figure) requireFitsRig(changes.figure, rig)
       const figure = changes.figure ? JSON.stringify(changes.figure) : null
       await db
         .prepare(`UPDATE entries
@@ -64,6 +68,14 @@ export function createEntryService({ db, figureBucket }: EntryServiceDependencie
       return get(entryId)
     },
   }
+}
+
+// The schema can't know which slots and colour roles exist, so a figure from a stale
+// editor could otherwise save parts that never render.
+function requireFitsRig(figure: FigureConfig, rig: Rig) {
+  const unknown = unknownFigureKeys(figure, rig)
+  if (!unknown.length) return
+  throw httpError(400, `This figure uses ${unknown.join(' and ')}, which the editor no longer offers. Reload the editor and try again.`)
 }
 
 function toEntryDetail(row: EntryRow): EntryDetail {
