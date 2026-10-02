@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_ROLES, PALETTE_IDS, SLOT_IDS, SLOTS } from './figure'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, COLOR_ROLES, LAYERS, PALETTE_IDS, SLOT_IDS, SLOTS } from './figure'
+import { STICK_RIG } from './stick-rig'
 
 // The stick figure as v1 drew it. The draw order is pinned in src/lib/render-figure.test.ts.
 describe('stick figure structure', () => {
@@ -34,5 +35,15 @@ describe('stick figure structure', () => {
 
   it('has these palettes', () => {
     expect(PALETTE_IDS).toEqual(['skin', 'hair', 'hat', 'glasses'])
+  })
+
+  it('is what STICK_RIG describes', () => {
+    expect(STICK_RIG.canvas).toEqual({ width: CANVAS_WIDTH, height: CANVAS_HEIGHT })
+    expect(STICK_RIG.slots.map(({ id, label, colorRoles, required }) => ({ id, label, colorRoles, required })))
+      .toEqual(SLOT_IDS.map(slot => ({ id: slot, ...SLOTS[slot] })))
+    expect(STICK_RIG.colorRoles.map(({ id, label, palette }) => ({ id, label, palette })))
+      .toEqual(Object.entries(COLOR_ROLES).map(([id, role]) => ({ id, ...role })))
+    expect(STICK_RIG.palettes).toEqual(PALETTE_IDS)
+    expect(STICK_RIG.layers).toEqual(LAYERS)
   })
 })
