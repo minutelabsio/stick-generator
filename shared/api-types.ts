@@ -88,6 +88,8 @@ export type JoinBatchState = 'open' | 'not_yet_open' | 'closed'
 
 export interface JoinBatch {
   state: JoinBatchState
+  // Null whenever batchName is, so a closed batch reveals nothing about its channel.
+  channelName: string | null
   batchName: string | null
   closesAt: string | null
   questions: Question[]

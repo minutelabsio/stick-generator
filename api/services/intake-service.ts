@@ -7,6 +7,7 @@ import { httpError } from '../http-errors'
 interface IntakeGroupRow {
   id: string
   name: string
+  channel_name: string
   opens_at: string
   closes_at: string
   questions: string
@@ -41,11 +42,13 @@ const PHOTO_SIGNATURES: { contentType: string, extension: string, matches: (byte
 
 const StoredQuestions = z.array(Question)
 
-const CLOSED_BATCH: JoinBatch = { state: 'closed', batchName: null, closesAt: null, questions: [], contactEmail: null }
+const CLOSED_BATCH: JoinBatch = { state: 'closed', channelName: null, batchName: null, closesAt: null, questions: [], contactEmail: null }
 
 export function createIntakeService({ db, figureBucket }: IntakeDependencies) {
   const findGroup = (joinCode: string) => db
-    .prepare('SELECT id, name, opens_at, closes_at, questions, contact_email FROM groups WHERE join_code = ? AND archived_at IS NULL')
+    .prepare(`SELECT groups.id, groups.name, channels.name AS channel_name, opens_at, closes_at, questions, contact_email
+              FROM groups JOIN channels ON channels.id = groups.channel_id
+              WHERE join_code = ? AND groups.archived_at IS NULL`)
     .bind(normalizeJoinCode(joinCode))
     .first<IntakeGroupRow>()
 
@@ -58,6 +61,7 @@ export function createIntakeService({ db, figureBucket }: IntakeDependencies) {
       if (state === 'closed') return { ...CLOSED_BATCH, contactEmail: group.contact_email }
       return {
         state,
+        channelName: group.channel_name,
         batchName: group.name,
         closesAt: group.closes_at,
         questions: StoredQuestions.parse(JSON.parse(group.questions)),

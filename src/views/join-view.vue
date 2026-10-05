@@ -94,6 +94,12 @@ onMounted(async () => {
   <main class="join">
     <div class="card panel">
       <p
+        v-if="batch?.channelName"
+        class="channel muted"
+      >
+        {{ batch.channelName }}
+      </p>
+      <p
         v-if="pageState === 'loading'"
         class="muted"
       >
@@ -226,6 +232,13 @@ onMounted(async () => {
 .panel {
   width: 100%;
   max-width: 30rem;
+}
+
+.channel {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .form {

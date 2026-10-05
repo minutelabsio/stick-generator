@@ -48,11 +48,12 @@ beforeAll(async () => {
 })
 
 describe('public intake', () => {
-  it('shows an open batch its questions, accepting codes typed loosely', async () => {
+  it('shows an open batch its channel and questions, accepting codes typed loosely', async () => {
     const response = await getBatch('open btch 2345')
-    const batch = await response.json<{ state: string, questions: unknown[] }>()
+    const batch = await response.json<{ state: string, channelName: string, questions: unknown[] }>()
 
     expect(batch.state).toBe('open')
+    expect(batch.channelName).toBe(`Channel ${TEST_CHANNEL_ID}`)
     expect(batch.questions).toHaveLength(1)
   })
 
