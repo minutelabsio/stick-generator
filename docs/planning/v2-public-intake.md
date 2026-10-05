@@ -19,8 +19,11 @@ Architecture context: [v2-architecture.md](./v2-architecture.md). Build phase:
 - **Invite only.** There is no open or public sign-up.
 - **One link per batch.** Every subscriber in a batch gets the same link or code.
   A batch is a v2 group.
-- **Hard close.** When the window ends, the link stops working. Anyone who missed it
-  emails the team, and the team adds them by hand.
+- **Open by hand, hard close by date.** A batch takes submissions only while the team
+  has switched it on *and* its close date hasn't passed. New batches start switched
+  off, so nobody submits to a half-set-up batch. The close date is required and is a
+  hard stop: reopening after it needs a later date. Anyone who missed it emails the
+  team, and the team adds them by hand.
 - **Questions belong to the channel**, not the batch: each channel asks its own
   subscribers its own questions, and every batch in it uses the channel's current
   form. Admins edit them without a deploy. Name, email, the likeness photo, and consent
@@ -58,9 +61,10 @@ A per-person link proves who is submitting. A shared link does not. Once it is s
 is effectively **semi-public until it closes**: it can be forwarded, screenshotted, or
 posted somewhere. The design accepts that, and relies on these instead:
 
-1. **A short window.** The link only works between `opens_at` and `closes_at`.
-2. **Human-scale caps.** A batch has an expected size. Submissions stop at a hard cap
-   set just above it.
+1. **A short window.** The link only works while the batch is switched on and before
+   `closes_at`.
+2. **Human-scale caps.** A batch can have an optional submission limit, set just above
+   its expected size. Submissions stop once it is reached.
 3. **Bot friction.** Turnstile and rate limits apply to every submit.
 4. **Rotation.** If the link leaks, the team rotates the code. The old link dies at once,
    and the new one goes out to subscribers.
@@ -136,12 +140,22 @@ and saved whole.
 
 | Setting | Purpose | Default |
 |---------|---------|---------|
-| `opens_at` / `closes_at` | Submission window. Required, because a batch cannot be opened without a close date | now / +14 days |
-| `max_submissions` | Hard cap. The page shows "This batch is full, email us" once it is reached | expected size × 1.25, rounded up |
+| `name` | Shown to the team and at the top of the join page. Can be renamed | required |
+| `is_open` | The manual switch. Submissions are taken only while it is on | off |
+| `closes_at` | Required hard stop. Must be in the future when set, and switching on a batch whose date has passed asks for a later date first | +14 days |
+| `max_submissions` | Optional limit. The page shows "This batch is full" once it is reached. Clearing it removes the limit | none |
 | `allowlist` (on/off) + uploaded `name,email` list | Only accept emails on the list | off |
 
-**Extend** moves `closes_at` later. **Close now** sets it to the current time. Reopening
-a closed batch is just extending it.
+What the join page shows follows from these, checked in this order:
+
+| State | When |
+|-------|------|
+| `closed` | switched off, or `closes_at` has passed |
+| `full` | a limit is set and that many entries have been submitted |
+| `open` | otherwise |
+
+The limit counts every entry submitted through the link, skipped ones included, so
+clearing out junk doesn't reopen room for more of it. Raise the limit to make room.
 
 ## Email allowlist (optional, per batch)
 
@@ -172,7 +186,7 @@ a partner. That is allowed.
 
 | # | Control | Stops | Where |
 |---|---------|-------|-------|
-| 1 | **Submission window** (`opens_at`/`closes_at`), enforced on the server | the link staying useful after the batch | submit handler |
+| 1 | **Open switch and close date** (`is_open`, `closes_at`), enforced on the server | the link staying useful after the batch | submit handler |
 | 2 | **Hard submission cap** per batch | a leaked link being used to flood the batch | submit handler: one conditional `INSERT … SELECT … WHERE (count) < cap` statement, because D1 has no interactive transactions |
 | 3 | **Rotate code** | a known leak. The old link dies immediately | team UI |
 | 4 | **Write-once public API**. It only creates entries and takes no entry, group, or R2 key parameters. The batch comes from the code | reading or editing anyone else's submission. IDOR-style bugs | public router |
@@ -233,9 +247,9 @@ Changes to [v2-architecture.md](./v2-architecture.md#data-model-d1). They fold i
 
 -- groups (= batches): intake settings
 --   join_code        TEXT UNIQUE          -- current code; NULL = intake disabled (manual-only batch)
---   opens_at         TEXT
---   closes_at        TEXT
---   max_submissions  INTEGER
+--   is_open          INTEGER NOT NULL DEFAULT 0
+--   closes_at        TEXT                 -- required whenever join_code is set
+--   max_submissions  INTEGER              -- NULL = no limit
 --   allowlist_on     INTEGER NOT NULL DEFAULT 0
 
 -- entries: submission metadata
@@ -268,7 +282,7 @@ Public (Zero Trust bypass, code in the `X-Join-Code` header):
 
 | Method + path | Purpose |
 |---------------|---------|
-| `GET /api/public/batch` | Validates the code. Returns `{ channelName, batchName, state: open\|not_yet_open\|closed\|full, closesAt, instructions, questions, thankYouMessage, consentText, contactEmail }`. A wrong code returns the same response as `closed`, except that a real closed batch names its contact email. That lets someone tell a once-real code from a made-up one, which is accepted: a closed code can submit nothing, and the email is meant for subscribers. The channel and batch names stay hidden |
+| `GET /api/public/batch` | Validates the code. Returns `{ channelName, batchName, state: open\|closed\|full, closesAt, instructions, questions, thankYouMessage, consentText, contactEmail }`. A wrong code returns the same response as `closed`, except that a real closed batch names its contact email. That lets someone tell a once-real code from a made-up one, which is accepted: a closed code can submit nothing, and the email is meant for subscribers. The channel and batch names stay hidden |
 | `POST /api/public/submission` | Multipart: `name`, `email`, `answers` (JSON, keyed by question id), `photo`, one `image:<questionId>` file per image answer, `consent`, `turnstileToken`. Creates one entry. Returns `{ ok: true }` |
 
 Team (Access):
@@ -276,19 +290,18 @@ Team (Access):
 | Method + path | Purpose |
 |---------------|---------|
 | `GET` · `PUT /api/channels/:id/intake` | The channel's instructions, questions, thank-you message, consent text, and contact email |
-| `PATCH /api/groups/:id` | Batch settings (window, cap, allowlist toggle) |
-| `POST /api/groups/:id/rotate-code` | New code. The old one is invalid immediately |
-| `PUT /api/groups/:id/allowlist` · `GET …/allowlist?status=pending` | Replace the list. See who hasn't submitted |
+| `PATCH /api/batches/:id` | Batch settings: name, open switch, close date, limit (and later the allowlist toggle) |
+| `POST /api/batches/:id/rotate-code` | New code. The old one is invalid immediately |
+| `PUT /api/batches/:id/allowlist` · `GET …/allowlist?status=pending` | Replace the list. See who hasn't submitted |
 
 ## Team UI
 
 - **Channel → Intake form**: instructions, the questions editor (an ordered list, not a
   form builder), thank-you message, consent text, and contact email.
-- **Batch → Settings**: window, cap, and allowlist upload, plus a **Preview** button
-  that opens the join page in no-submit mode.
-- **Batch → Share**: the link and the code, each with a copy button, a status line
-  ("Open, closes Fri 3 Oct, 41 / 60 submitted"), plus **Extend**, **Close now**, and
-  **Rotate code**.
+- **Batch → Intake**: rename, the open switch, close date, and limit, plus (later)
+  allowlist upload and a **Preview** button that opens the join page in no-submit mode.
+- **Batch → Share**: the link and the code, each with a copy button, a live status
+  line ("Open · 41 / 60 submitted · closes Fri 3 Oct"), and **Rotate code**.
 - **Queue**: multi-select to skip entries. With the allowlist on, a "Not yet
   submitted" list.
 
@@ -298,13 +311,13 @@ Team (Access):
   It should load fast on mobile and has nothing to leak.
 - It is mobile-first and fits on one screen: channel and batch name, name + email,
   photo + crop, the channel's questions, consent, submit.
-- It has clear states for loading, open, not yet open, closed, full, and submitted.
+- It has clear states for loading, open, closed, full, and submitted.
   Every closed, full, or error state names the contact email.
 
 ## Tests (critical paths only)
 
-- Window and cap: submits before `opens_at` or after `closes_at` are rejected. The cap
-  holds under concurrent submits.
+- Switch, date, and limit: submits while switched off or after `closes_at` are
+  rejected. The limit holds under concurrent submits.
 - Rotation: the old code fails immediately after rotating.
 - Write-once: the public API has no path to read or modify an existing entry.
   A second submit with the same email creates a second entry and leaves the first alone.

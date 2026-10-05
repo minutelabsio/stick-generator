@@ -81,7 +81,7 @@ CREATE TABLE groups (
   name        TEXT NOT NULL,
   source      TEXT NOT NULL,              -- 'intake' | 'manual' | 'v1'
   questions   TEXT,                       -- JSON question list; `highlight` marks what designers see first
-  -- + batch intake settings (join_code, window, cap, allowlist, consent, contact): see v2-public-intake.md
+  -- + batch intake settings (join_code, open switch, close date, limit, allowlist): see v2-public-intake.md
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   archived_at TEXT
 );
@@ -227,7 +227,7 @@ The public routes (`/api/public/*`) are listed in [v2-public-intake.md](./v2-pub
 | `GET /groups` · `POST /groups` · `PATCH /groups/:id` | List (with status counts), create, rename/archive, questions and intake settings |
 | `GET /groups/:id/entries?status=&q=` | Queue for a group |
 | `POST /groups/:id/entries` | Manual entry (e.g. someone emailed a photo) |
-| `POST /groups/:id/rotate-code` · `PUT /groups/:id/allowlist` | Batch intake management |
+| `PATCH /batches/:id` · `POST /batches/:id/rotate-code` · `PUT /batches/:id/allowlist` | Batch intake management |
 | `GET /entries/:id` · `PATCH /entries/:id` | Read, save `figure`/`status` with `If-Match: <version>` → 409 on conflict |
 | `PUT /entries/:id/render` | Upload PNG, set `render_key`, clear `render_stale` |
 | `PUT /entries/:id/likeness` | Replace or attach a photo |

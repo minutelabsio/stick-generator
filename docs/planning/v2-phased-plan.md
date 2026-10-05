@@ -166,13 +166,14 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
 - [x] Intake form page per channel: the settings above, with an ordered questions
       editor (not a form builder).
 - [ ] Batches screen: create, rename, archive, and progress per batch.
-- [ ] Batch settings: window (`opens_at`/`closes_at`), submission cap, and an optional
-      allowlist upload.
+- [ ] Batch settings: rename, a manual open/closed switch (new batches start closed),
+      a required close date that is a hard stop, and an optional submission limit.
+- [ ] Optional allowlist upload.
 - [ ] Share panel: link and code with copy buttons, live status ("41 / 60, closes Fri"),
-      plus Extend, Close now, and Rotate code.
+      plus Rotate code. The switch and the close date replace Extend and Close now.
 - [ ] Public router (`/api/public/*`), mounted apart from the team routes:
-      `GET batch` and `POST submission`. It is write-once, enforces the window and the
-      cap (one conditional insert), and returns the same response for a wrong code as
+      `GET batch` and `POST submission`. It is write-once, enforces the switch, the close
+      date, and the limit (one conditional insert), and returns the same response for a wrong code as
       for a closed batch, apart from the closed batch's contact email.
 - [ ] Abuse controls: Turnstile always on, per-IP rate limits (loose for code checks,
       tight for submits), and a salted IP hash on each entry.
@@ -189,7 +190,7 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
       the channel's questions, photo picker with crop and downscale plus JPEG re-encode
       (strips EXIF), consent. Done so far: the channel's questions by type, instructions,
       thank-you message, and "Send another". Still to do: a separate entry, photo crop,
-      and the full state. Clear states for open, not yet open, closed, full, and submitted.
+      and the full state. Clear states for open, closed, full, and submitted.
       Closed, full, and error states all name the contact email. Shows the channel's
       instructions above the form and its thank-you message after submitting.
 - [ ] Manual entry with photo upload from the team side, for late subscribers who email in.
@@ -197,7 +198,7 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
 
 **Exit:** a staging batch is opened and three testers submit from their phones, and the
 entries show up in the queue. A second submit with the same email adds a second entry. After
-"Close now" and after "Rotate code", the old link shows the closed message. A route scan
+switching the batch off and after "Rotate code", the old link shows the closed message. A route scan
 confirms that nothing outside `/join` and `/api/public/*` answers without Access.
 
 ---
@@ -357,8 +358,8 @@ on its own.
 | v1 `stickProps` URLs that no longer resolve | The migration dry run lists them. The figure falls back to `null` for that slot and is flagged |
 | The public endpoint gets abused (spam, floods, oversized uploads) | Layered controls in [v2-public-intake.md](./v2-public-intake.md#spam-and-abuse-controls). Nothing can be edited or read through the public API |
 | An Access bypass typo exposes team routes | The app checks the JWT itself on every non-public route. A route enumeration test runs in CI |
-| A batch link leaks (forwarded, posted publicly) | Short window, hard cap, Turnstile, write-once API, one-click rotate, optional allowlist, bulk skip |
+| A batch link leaks (forwarded, posted publicly) | Open switch, close date, limit, Turnstile, write-once API, one-click rotate, optional allowlist, bulk skip |
 | Someone submits using another subscriber's email | Repeats are allowed by design, so a designer skips a bad one. Bulk skip, the optional allowlist, and an optional email ownership check in Phase 6 |
-| Followers miss the window | Designed for: the closed page names the contact email, and the team adds a manual entry or extends the batch |
+| Followers miss the window | Designed for: the closed page names the contact email, and the team adds a manual entry or moves the close date and switches the batch back on |
 | Photo PII leakage | Access on all team routes, private R2, EXIF stripped in the browser, photo never served back publicly, purge on archive |
 | Large zips hitting Worker CPU/memory limits | Stream the zip (no buffering). Fall back to building the zip in the browser if Q6 says batches are large |
