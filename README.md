@@ -30,6 +30,7 @@ See [SETUP.md](./SETUP.md) for prerequisites, environments, and provisioning.
 2. **Batches** (`/`): opens the channel you last used. Switch between the seeded
    *Original* and *Sketchbook* channels with the menu next to the title. Each has its
    own demo batch, palettes, and assets. Open a batch, or create one with **New batch**.
+   **Manage channels** adds a channel.
 3. **Batch page**: copy the join link and open it, ideally in a narrow window, to
    submit as a follower. Submissions show up in the table.
 4. Click an entry to open the **editor**: pick parts and colours, or **Randomise**,

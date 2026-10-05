@@ -144,6 +144,7 @@ later means a table rebuild. Once anything is deployed, use a new numbered migra
 | Method + path | Change |
 |---------------|--------|
 | `GET /channels` | New. Lists channels for the switcher |
+| `POST /channels` | New. Creates a channel from a name and slug, with a copy of the stick rig and an empty library |
 | `GET /channels/:channelId/batches` · `POST /channels/:channelId/batches` | Replace `/batches` list and create. `GET /batches/:id` stays keyed by ID |
 | `GET /channels/:channelId/library` | Replaces `/library`. Returns the channel's assets, palettes, and rig |
 | `GET /entries/:id` | Adds `channelId`, so the editor knows which library to load |
@@ -153,6 +154,8 @@ later means a table rebuild. Once anything is deployed, use a new numbered migra
 ### SPA
 
 - A channel switcher in the header. The last channel used is remembered in `localStorage`.
+- A channels page (`/channels`) lists channels and creates new ones. Until rigs are
+  editable, every new channel draws with the stick rig. With no channels, `/` opens it.
 - The batch list moves under `/c/:channelSlug`. Batch and entry pages stay keyed by ID
   and read the channel from their data.
 - New batches are created in the current channel.

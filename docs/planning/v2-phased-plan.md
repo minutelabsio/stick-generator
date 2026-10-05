@@ -127,6 +127,8 @@ Design: [v2-channels-and-rigs.md](./v2-channels-and-rigs.md#channels).
 - [x] SPA: channel switcher (remembers the last channel), batch list under
       `/c/:channelSlug`, new batches created in the current channel.
 - [x] Join page shows the channel's name.
+- [x] Channels page (`/channels`) that creates a channel from a name and address.
+      Every channel gets a copy of the stick rig. Editing rigs stays in the backlog.
 - [x] Tests: batch lists don't leak across channels, a figure that mixes channels is
       rejected, and two channels can each have a `hair` palette.
 
@@ -138,8 +140,7 @@ Done 2026-10-05 on the `feature-channels` branch. Met: in dev, switching between
 *Original* and *Sketchbook* changes the batch list, swatches, and assets, and tests
 cover the leak, mixed-figure, and shared-palette-id cases. Saving also refuses an
 asset used in a slot it wasn't made for, since the same query checks that for free.
-Not covered: there is no way yet to create a channel outside the dev seed, so
-staging and production need their first channel added by hand once provisioned.
+A new channel starts with no palettes or assets. Phase 2's screens fill those in.
 
 ---
 
