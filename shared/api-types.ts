@@ -46,6 +46,7 @@ export interface BatchDetail extends BatchSummary {
 
 export interface EntryDetail extends EntrySummary {
   batchId: string
+  channelId: string
   answers: Record<string, string>
   likenessUrl: string | null
   figure: FigureConfig | null

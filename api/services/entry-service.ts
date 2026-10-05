@@ -5,10 +5,12 @@ import type { EntryDetail, EntryStatus, UpdateEntryRequest } from '../../shared/
 import { fileUrl } from '../files'
 import { httpError } from '../http-errors'
 import { toEntrySummary } from './batch-service'
+import type { ChannelService } from './channel-service'
 
 interface EntryRow {
   id: string
   group_id: string
+  channel_id: string
   name: string | null
   email: string | null
   status: EntryStatus
@@ -25,13 +27,34 @@ interface EntryRow {
 interface EntryServiceDependencies {
   db: D1Database
   figureBucket: R2Bucket
-  rig: Rig
+  channels: ChannelService
+}
+
+interface MisplacedAssetRow {
+  slot: string
+  asset_id: string
 }
 
 const StoredAnswers = z.record(z.string(), z.string())
 
-export function createEntryService({ db, figureBucket, rig }: EntryServiceDependencies) {
-  const findRow = (entryId: string) => db.prepare('SELECT * FROM entries WHERE id = ?').bind(entryId).first<EntryRow>()
+export function createEntryService({ db, figureBucket, channels }: EntryServiceDependencies) {
+  const findRow = (entryId: string) => db
+    .prepare('SELECT entries.*, groups.channel_id FROM entries JOIN groups ON groups.id = entries.group_id WHERE entries.id = ?')
+    .bind(entryId)
+    .first<EntryRow>()
+
+  // One query for every asset in the figure. An asset never changes channel or slot,
+  // so checking before the write cannot race with it.
+  const requireChannelAssets = async (figure: FigureConfig, channelId: string) => {
+    const misplaced = await db
+      .prepare(`SELECT key AS slot, value AS asset_id FROM json_each(?)
+                WHERE NOT EXISTS (SELECT 1 FROM assets WHERE assets.id = value AND channel_id = ? AND assets.slot = key)`)
+      .bind(JSON.stringify(figure.assets), channelId)
+      .all<MisplacedAssetRow>()
+    if (!misplaced.results.length) return
+    const named = misplaced.results.map(row => `"${row.asset_id}" for ${row.slot}`).join(' and ')
+    throw httpError(400, `This figure uses ${named}, which this channel's library doesn't have. Reload the editor and try again.`)
+  }
 
   const get = async (entryId: string): Promise<EntryDetail | null> => {
     const row = await findRow(entryId)
@@ -42,7 +65,14 @@ export function createEntryService({ db, figureBucket, rig }: EntryServiceDepend
     get,
 
     async update(entryId: string, changes: UpdateEntryRequest, updatedBy: string): Promise<EntryDetail | null> {
-      if (changes.figure) requireFitsRig(changes.figure, rig)
+      const row = await findRow(entryId)
+      if (!row) return null
+      if (changes.figure) {
+        const channel = await channels.get(row.channel_id)
+        if (!channel) throw new Error(`Entry ${entryId} belongs to missing channel ${row.channel_id}`)
+        requireFitsRig(changes.figure, channel.rig)
+        await requireChannelAssets(changes.figure, channel.id)
+      }
       const figure = changes.figure ? JSON.stringify(changes.figure) : null
       await db
         .prepare(`UPDATE entries
@@ -82,6 +112,7 @@ function toEntryDetail(row: EntryRow): EntryDetail {
   return {
     ...toEntrySummary(row),
     batchId: row.group_id,
+    channelId: row.channel_id,
     answers: StoredAnswers.parse(JSON.parse(row.answers)),
     likenessUrl: row.likeness_key ? fileUrl('figures', row.likeness_key) : null,
     figure: row.figure ? FigureConfig.parse(JSON.parse(row.figure)) : null,
