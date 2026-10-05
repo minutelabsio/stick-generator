@@ -10,3 +10,10 @@ export async function insertChannel(id = TEST_CHANNEL_ID) {
     .bind(id, id, `Channel ${id}`, JSON.stringify(STICK_RIG))
     .run()
 }
+
+export async function insertAsset({ id, channelId = TEST_CHANNEL_ID, slot }: { id: string, channelId?: string, slot: string }) {
+  await env.DB
+    .prepare('INSERT INTO assets (id, channel_id, slot, label, parts) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING')
+    .bind(id, channelId, slot, id, JSON.stringify({ line: `v2/assets/${id}/line-r1.png` }))
+    .run()
+}

@@ -6,6 +6,7 @@ import type { AppEnv } from '../app'
 import { requireFound } from '../http-errors'
 import { createBatchService } from '../services/batch-service'
 import { createChannelService } from '../services/channel-service'
+import { createLibraryService } from '../services/library-service'
 
 // Only what needs a channel to exist lives under it: listing and creating. A batch or
 // entry is addressed by its own id once it exists, and its response names its channel.
@@ -24,4 +25,8 @@ export const channelRoutes = new Hono<AppEnv>()
   .post('/:channelId/batches', zValidator('json', CreateBatchRequest), async (c) => {
     const channel = await requireChannel(c, c.req.param('channelId'))
     return c.json(await createBatchService(c.env.DB).create(channel.id, c.req.valid('json')), 201)
+  })
+  .get('/:channelId/library', async (c) => {
+    const channel = await requireChannel(c, c.req.param('channelId'))
+    return c.json(await createLibraryService({ db: c.env.DB, channel }).get())
   })

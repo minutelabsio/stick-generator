@@ -1,7 +1,8 @@
 import { env } from 'cloudflare:workers'
 import { beforeAll, describe, expect, it } from 'vitest'
+import type { Library } from '../../shared/api-types'
 import { createTestAccessKeys } from '../../test/access-tokens'
-import { insertChannel } from '../../test/fixtures'
+import { insertAsset, insertChannel } from '../../test/fixtures'
 import { createApp } from '../app'
 
 const ORIGIN = 'https://stick.example.com'
@@ -54,5 +55,22 @@ describe('channel-scoped batches', () => {
     const response = await createBatch('no-such-channel', 'Orphan')
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('channel-scoped library', () => {
+  it('holds only that channel\'s assets and palettes, with its rig', async () => {
+    await insertAsset({ id: 'hair-in-a', channelId: CHANNEL_A, slot: 'hair' })
+    await insertAsset({ id: 'hair-in-b', channelId: CHANNEL_B, slot: 'hair' })
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO palettes (channel_id, id, colors) VALUES (?, 'hair', '["#AAAAAA"]')`).bind(CHANNEL_A),
+      env.DB.prepare(`INSERT INTO palettes (channel_id, id, colors) VALUES (?, 'hair', '["#BBBBBB"]')`).bind(CHANNEL_B),
+    ])
+
+    const library = await (await send(`/channels/${CHANNEL_A}/library`)).json<Library>()
+
+    expect(library.assets.map(asset => asset.id)).toEqual(['hair-in-a'])
+    expect(library.palettes.hair).toEqual(['#AAAAAA'])
+    expect(library.rig.slots.length).toBeGreaterThan(0)
   })
 })

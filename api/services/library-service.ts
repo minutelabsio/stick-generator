@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Library, LibraryAsset } from '../../shared/api-types'
 import type { Rig } from '../../shared/rig'
 import { fileUrl } from '../files'
+import type { Channel } from './channel-service'
 
 interface AssetRow {
   id: string
@@ -20,20 +21,22 @@ const StoredColors = z.array(z.string())
 
 interface LibraryDependencies {
   db: D1Database
-  rig: Rig
+  channel: Channel
 }
 
-export function createLibraryService({ db, rig }: LibraryDependencies) {
+export function createLibraryService({ db, channel }: LibraryDependencies) {
   return {
     async get(): Promise<Library> {
       const [assetRows, paletteRows] = await Promise.all([
-        db.prepare('SELECT id, slot, label, parts FROM assets WHERE archived_at IS NULL ORDER BY slot, sort').all<AssetRow>(),
-        db.prepare('SELECT id, colors FROM palettes').all<PaletteRow>(),
+        db.prepare('SELECT id, slot, label, parts FROM assets WHERE channel_id = ? AND archived_at IS NULL ORDER BY slot, sort')
+          .bind(channel.id)
+          .all<AssetRow>(),
+        db.prepare('SELECT id, colors FROM palettes WHERE channel_id = ?').bind(channel.id).all<PaletteRow>(),
       ])
       return {
         assets: assetRows.results.map(toLibraryAsset),
-        palettes: toPalettes(rig, paletteRows.results),
-        rig,
+        palettes: toPalettes(channel.rig, paletteRows.results),
+        rig: channel.rig,
       }
     },
   }

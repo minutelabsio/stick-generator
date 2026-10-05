@@ -7,7 +7,6 @@ import { batchRoutes } from './routes/batch-routes'
 import { channelRoutes } from './routes/channel-routes'
 import { entryRoutes } from './routes/entry-routes'
 import { fileRoutes } from './routes/file-routes'
-import { libraryRoutes } from './routes/library-routes'
 import { publicRoutes } from './routes/public-routes'
 import type { AccessKeyResolver, AccessUser } from './middleware/access-auth'
 
@@ -36,7 +35,6 @@ export function createApp({ resolveAccessKeys = createRemoteAccessKeys() }: AppO
   app.route('/channels', channelRoutes)
   app.route('/batches', batchRoutes)
   app.route('/entries', entryRoutes)
-  app.route('/library', libraryRoutes)
   app.route('/files', fileRoutes)
 
   return app
