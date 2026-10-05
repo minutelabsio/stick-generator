@@ -91,6 +91,12 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
         </div>
       </template>
       <template #end>
+        <RouterLink
+          :to="{ name: 'channels' }"
+          class="manage-channels"
+        >
+          Manage channels
+        </RouterLink>
         <Button
           label="New batch"
           icon="pi pi-plus"
@@ -209,6 +215,11 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.manage-channels {
+  margin-right: 1rem;
+  font-size: var(--text-md);
 }
 
 .ledger :deep(tr) {

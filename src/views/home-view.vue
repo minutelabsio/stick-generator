@@ -18,11 +18,8 @@ onMounted(async () => {
     return
   }
   const channel = channelStore.lastUsed()
-  if (!channel) {
-    problem.value = 'There are no channels yet, so there is nowhere to put batches. Ask whoever runs this tool to add one.'
-    return
-  }
-  await router.replace({ name: 'batches', params: { channelSlug: channel.slug } })
+  // Batches need a channel, so a fresh install starts by making one.
+  await router.replace(channel ? { name: 'batches', params: { channelSlug: channel.slug } } : { name: 'channels' })
 })
 </script>
 

@@ -21,9 +21,14 @@ export const useChannelStore = defineStore('channels', () => {
     return loading
   }
 
+  // Keeps the list in the server's order (by name) without refetching it.
+  function added(channel: ChannelSummary) {
+    channels.value = [...channels.value, channel].toSorted((a, b) => a.name.localeCompare(b.name))
+  }
+
   const bySlug = (slug: string) => channels.value.find(channel => channel.slug === slug)
   const byId = (id: string) => channels.value.find(channel => channel.id === id)
   const lastUsed = () => byId(readLastChannelId() ?? '') ?? channels.value[0]
 
-  return { channels, load, bySlug, byId, lastUsed }
+  return { channels, load, added, bySlug, byId, lastUsed }
 })

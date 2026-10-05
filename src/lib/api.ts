@@ -5,6 +5,7 @@ import type {
   BatchSummary,
   ChannelSummary,
   CreateBatchRequest,
+  CreateChannelRequest,
   EntryDetail,
   JoinBatch,
   Library,
@@ -33,6 +34,7 @@ const sendJson = (method: string, payload: unknown): RequestInit => ({
 
 export const api = {
   listChannels: () => request<ChannelSummary[]>('/api/channels'),
+  createChannel: (channel: CreateChannelRequest) => request<ChannelSummary>('/api/channels', sendJson('POST', channel)),
   listBatches: (channelId: string) => request<BatchSummary[]>(`/api/channels/${channelId}/batches`),
   getBatch: (batchId: string) => request<BatchDetail>(`/api/batches/${batchId}`),
   createBatch: (channelId: string, batch: CreateBatchRequest) =>
