@@ -155,15 +155,15 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
 
 - [ ] Resolve Q5 (retention), which the default consent text depends on. Questions
       are configured per channel, so they don't block this phase.
-- [ ] Intake settings per channel, stored as one JSON document: instructions,
+- [x] Intake settings per channel, stored as one JSON document: instructions,
       questions, thank-you message, consent text, and contact email. Question types are
       text, email, select (optionally with "Other"), radio, and image. Each has a
       permanent id.
-- [ ] Each entry keeps a copy of the questions it was asked beside its answers, so
+- [x] Each entry keeps a copy of the questions it was asked beside its answers, so
       editing the form never breaks or misreports old entries.
-- [ ] Answers checked on the server against the channel's form with rules shared with
+- [x] Answers checked on the server against the channel's form with rules shared with
       the join page. Image answers get the same size and magic-byte checks as the photo.
-- [ ] Intake form page per channel: the settings above, with an ordered questions
+- [x] Intake form page per channel: the settings above, with an ordered questions
       editor (not a form builder).
 - [ ] Batches screen: create, rename, archive, and progress per batch.
 - [ ] Batch settings: window (`opens_at`/`closes_at`), submission cap, and an optional
@@ -175,16 +175,21 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
       cap (one conditional insert), and returns the same response for a wrong code as
       for a closed batch.
 - [ ] Abuse controls: Turnstile always on, per-IP rate limits (loose for code checks,
-      tight for submits), size limits checked before the body is read, magic-byte
-      checks on every image, a salted IP hash on each entry, and security headers on `/join`.
-- [ ] Repeat submissions with the same email are allowed (answering for a friend or
-      partner) and are not flagged. Bulk "skip selected" for clearing junk.
+      tight for submits), and a salted IP hash on each entry.
+- [x] Size limits checked before the body is read, magic-byte checks on every image,
+      and security headers (CSP, no framing, no referrer, nosniff) on every page via
+      `public/_headers` and on API responses.
+- [x] Repeat submissions with the same email are allowed (answering for a friend or
+      partner) and are not flagged.
+- [ ] Bulk "skip selected" for clearing junk.
 - [ ] Zero Trust: add a bypass policy for `/join` and `/api/public/*` only. Add a route
       enumeration test proving every other route needs the Access JWT.
 - [ ] Join page (a separate lightweight entry, mobile-first). The code comes from the
       URL fragment or is typed in, and is stripped from the address bar. Name + email,
-      batch questions, photo picker with crop and downscale plus JPEG re-encode (strips
-      EXIF), consent. Clear states for open, not yet open, closed, full, and submitted.
+      the channel's questions, photo picker with crop and downscale plus JPEG re-encode
+      (strips EXIF), consent. Done so far: the channel's questions by type, instructions,
+      thank-you message, and "Send another". Still to do: a separate entry, photo crop,
+      and the full state. Clear states for open, not yet open, closed, full, and submitted.
       Closed, full, and error states all name the contact email. Shows the channel's
       instructions above the form and its thank-you message after submitting.
 - [ ] Manual entry with photo upload from the team side, for late subscribers who email in.
