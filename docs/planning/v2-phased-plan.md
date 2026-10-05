@@ -165,13 +165,14 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
       the join page. Image answers get the same size and magic-byte checks as the photo.
 - [x] Intake form page per channel: the settings above, with an ordered questions
       editor (not a form builder).
-- [ ] Batches screen: create, rename, archive, and progress per batch.
-- [ ] Batch settings: rename, a manual open/closed switch (new batches start closed),
+- [ ] Batches screen: create, rename, archive, and progress per batch. Done except
+      archive.
+- [x] Batch settings: rename, a manual open/closed switch (new batches start closed),
       a required close date that is a hard stop, and an optional submission limit.
 - [ ] Optional allowlist upload.
-- [ ] Share panel: link and code with copy buttons, live status ("41 / 60, closes Fri"),
+- [x] Share panel: link and code with copy buttons, live status ("41 / 60, closes Fri"),
       plus Rotate code. The switch and the close date replace Extend and Close now.
-- [ ] Public router (`/api/public/*`), mounted apart from the team routes:
+- [x] Public router (`/api/public/*`), mounted apart from the team routes:
       `GET batch` and `POST submission`. It is write-once, enforces the switch, the close
       date, and the limit (one conditional insert), and returns the same response for a wrong code as
       for a closed batch, apart from the closed batch's contact email.
@@ -189,8 +190,8 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
       URL fragment or is typed in, and is stripped from the address bar. Name + email,
       the channel's questions, photo picker with crop and downscale plus JPEG re-encode
       (strips EXIF), consent. Done so far: the channel's questions by type, instructions,
-      thank-you message, and "Send another". Still to do: a separate entry, photo crop,
-      and the full state. Clear states for open, closed, full, and submitted.
+      thank-you message, "Send another", and the full state. Still to do: a separate
+      entry and photo crop. Clear states for open, closed, full, and submitted.
       Closed, full, and error states all name the contact email. Shows the channel's
       instructions above the form and its thank-you message after submitting.
 - [ ] Manual entry with photo upload from the team side, for late subscribers who email in.
