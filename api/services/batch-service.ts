@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { Question } from '../../shared/api-types'
 import type { BatchDetail, BatchSummary, CreateBatchRequest, EntryStatus, EntrySummary } from '../../shared/api-types'
 import { generateJoinCode } from '../../shared/join-code'
+import { slugify } from '../../shared/slug'
 import { fileUrl } from '../files'
 
 interface GroupRow {
@@ -106,5 +107,3 @@ export function toEntrySummary(row: EntrySummaryRow): EntrySummary {
     renderUrl: row.render_key ? `${fileUrl('figures', row.render_key)}?v=${row.rendered_at}` : null,
   }
 }
-
-const slugify = (name: string) => name.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-').replaceAll(/^-|-$/g, '')
