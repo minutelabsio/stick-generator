@@ -69,7 +69,9 @@ export function createIntakeService({ db, figureBucket }: IntakeDependencies) {
     .first<IntakeGroupRow>()
 
   return {
-    // An unknown code looks exactly like a closed batch, so the response never confirms a code exists.
+    // An unknown code looks like a closed batch, so the response doesn't confirm a code
+    // exists. The one difference, accepted on purpose, is that a real closed batch names
+    // its contact email so late subscribers know whom to ask.
     async getBatch(joinCode: string): Promise<JoinBatch> {
       const group = await findGroup(joinCode)
       if (!group) return CLOSED_BATCH

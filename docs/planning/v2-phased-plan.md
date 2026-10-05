@@ -173,7 +173,7 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
 - [ ] Public router (`/api/public/*`), mounted apart from the team routes:
       `GET batch` and `POST submission`. It is write-once, enforces the window and the
       cap (one conditional insert), and returns the same response for a wrong code as
-      for a closed batch.
+      for a closed batch, apart from the closed batch's contact email.
 - [ ] Abuse controls: Turnstile always on, per-IP rate limits (loose for code checks,
       tight for submits), and a salted IP hash on each entry.
 - [x] Size limits checked before the body is read, magic-byte checks on every image,

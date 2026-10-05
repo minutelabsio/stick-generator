@@ -268,7 +268,7 @@ Public (Zero Trust bypass, code in the `X-Join-Code` header):
 
 | Method + path | Purpose |
 |---------------|---------|
-| `GET /api/public/batch` | Validates the code. Returns `{ channelName, batchName, state: open\|not_yet_open\|closed\|full, closesAt, instructions, questions, thankYouMessage, consentText, contactEmail }`. A wrong code returns the same shape as `closed`, so it gives nothing away |
+| `GET /api/public/batch` | Validates the code. Returns `{ channelName, batchName, state: open\|not_yet_open\|closed\|full, closesAt, instructions, questions, thankYouMessage, consentText, contactEmail }`. A wrong code returns the same response as `closed`, except that a real closed batch names its contact email. That lets someone tell a once-real code from a made-up one, which is accepted: a closed code can submit nothing, and the email is meant for subscribers. The channel and batch names stay hidden |
 | `POST /api/public/submission` | Multipart: `name`, `email`, `answers` (JSON, keyed by question id), `photo`, one `image:<questionId>` file per image answer, `consent`, `turnstileToken`. Creates one entry. Returns `{ ok: true }` |
 
 Team (Access):
