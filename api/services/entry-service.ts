@@ -1,7 +1,9 @@
 import { z } from 'zod'
 import { FigureConfig, unknownFigureKeys } from '../../shared/figure'
+import { IntakeSettings, StoredAnswer } from '../../shared/intake'
+import type { AnswerValue, Question } from '../../shared/intake'
 import type { Rig } from '../../shared/rig'
-import type { EntryDetail, EntryStatus, UpdateEntryRequest } from '../../shared/api-types'
+import type { EntryAnswer, EntryDetail, EntryStatus, UpdateEntryRequest } from '../../shared/api-types'
 import { fileUrl } from '../files'
 import { httpError } from '../http-errors'
 import { toEntrySummary } from './batch-service'
@@ -11,6 +13,8 @@ interface EntryRow {
   id: string
   group_id: string
   channel_id: string
+  // The channel's current intake settings, for which answers to highlight.
+  intake: string
   name: string | null
   email: string | null
   status: EntryStatus
@@ -35,11 +39,14 @@ interface MisplacedAssetRow {
   asset_id: string
 }
 
-const StoredAnswers = z.record(z.string(), z.string())
+const StoredAnswers = z.array(StoredAnswer)
 
 export function createEntryService({ db, figureBucket, channels }: EntryServiceDependencies) {
   const findRow = (entryId: string) => db
-    .prepare('SELECT entries.*, groups.channel_id FROM entries JOIN groups ON groups.id = entries.group_id WHERE entries.id = ?')
+    .prepare(`SELECT entries.*, groups.channel_id, channels.intake FROM entries
+              JOIN groups ON groups.id = entries.group_id
+              JOIN channels ON channels.id = groups.channel_id
+              WHERE entries.id = ?`)
     .bind(entryId)
     .first<EntryRow>()
 
@@ -109,14 +116,34 @@ function requireFitsRig(figure: FigureConfig, rig: Rig) {
 }
 
 function toEntryDetail(row: EntryRow): EntryDetail {
+  const currentQuestions = new Map(IntakeSettings.parse(JSON.parse(row.intake)).questions.map(question => [question.id, question]))
   return {
     ...toEntrySummary(row),
     batchId: row.group_id,
     channelId: row.channel_id,
-    answers: StoredAnswers.parse(JSON.parse(row.answers)),
+    answers: StoredAnswers.parse(JSON.parse(row.answers)).map(answer => toEntryAnswer(answer, currentQuestions)),
     likenessUrl: row.likeness_key ? fileUrl('figures', row.likeness_key) : null,
     figure: row.figure ? FigureConfig.parse(JSON.parse(row.figure)) : null,
     updatedBy: row.updated_by,
     updatedAt: row.updated_at,
   }
+}
+
+// Labelled as asked, from the entry's own copy. Highlight follows the current form,
+// so a designer can turn it on for answers already in.
+function toEntryAnswer({ question, value }: StoredAnswer, currentQuestions: ReadonlyMap<string, Question>): EntryAnswer {
+  return {
+    questionId: question.id,
+    label: question.label,
+    highlight: currentQuestions.get(question.id)?.highlight ?? question.highlight,
+    text: answerText(value),
+    isOther: value.kind === 'other',
+    imageUrl: value.kind === 'image' ? fileUrl('figures', value.key) : null,
+  }
+}
+
+function answerText(value: AnswerValue) {
+  if (value.kind === 'image') return null
+  if (value.kind === 'choice') return value.choice
+  return value.text
 }

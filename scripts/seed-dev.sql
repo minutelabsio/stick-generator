@@ -19,22 +19,24 @@ INSERT INTO palettes (channel_id, id, colors) VALUES
   ('00000000-0000-4000-8000-0000000000c2', 'glasses', '["#2B2B2B","#5C5C5C","#8A7563","#F4F1EC"]')
 ON CONFLICT (channel_id, id) DO UPDATE SET colors = excluded.colors;
 
-INSERT INTO groups (id, channel_id, slug, name, source, questions, join_code, opens_at, closes_at, max_submissions, contact_email) VALUES
+INSERT INTO groups (id, channel_id, slug, name, source, join_code, opens_at, closes_at, max_submissions) VALUES
   ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000c1', 'demo-batch', 'Demo batch', 'intake',
-   '[{"id":"hair","label":"Describe your hair","type":"text","required":true,"maxLength":200,"highlight":true},{"id":"hobby","label":"A hobby or favourite thing","type":"text","required":false,"maxLength":200,"highlight":true}]',
-   'DEMX-TEST-KEYS', '2026-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z', 50, 'team@example.com'),
+   'DEMX-TEST-KEYS', '2026-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z', 50),
   ('00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-0000000000c2', 'sketchbook-demo', 'Sketchbook demo', 'intake',
-   '[{"id":"look","label":"Describe how you look","type":"text","required":true,"maxLength":200,"highlight":true}]',
-   'SKCH-TEST-KEYS', '2026-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z', 20, 'team@example.com')
+   'SKCH-TEST-KEYS', '2026-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z', 20)
 ON CONFLICT (id) DO NOTHING;
 
+-- Answers sit beside a copy of the question as asked. Alan answered a "Favourite snack"
+-- question the current form no longer has, and Ada answered twice (once for her partner).
 INSERT INTO entries (id, group_id, name, email, answers, status, submitted_at) VALUES
   ('00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000001', 'Ada Example', 'ada@example.com',
-   '{"hair":"Short, dark, curly","hobby":"Rock climbing"}', 'new', '2026-09-01T10:00:00.000Z'),
+   '[{"question":{"id":"hair","type":"text","label":"Describe your hair","required":true,"highlight":true,"maxLength":200},"value":{"kind":"text","text":"Short, dark, curly"}},{"question":{"id":"hobby","type":"text","label":"A hobby or favourite thing","highlight":true,"maxLength":200},"value":{"kind":"text","text":"Rock climbing"}},{"question":{"id":"colour","type":"select","label":"Favourite colour","options":["Red","Blue","Green"],"allowOther":true,"highlight":true},"value":{"kind":"choice","choice":"Blue"}},{"question":{"id":"mug","type":"radio","label":"Mug size","options":["Regular","Large"],"required":true},"value":{"kind":"choice","choice":"Large"}}]', 'new', '2026-09-01T10:00:00.000Z'),
   ('00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000001', 'Grace Sample', 'grace@example.com',
-   '{"hair":"Long and red","hobby":"Knitting"}', 'in_progress', '2026-09-01T11:00:00.000Z'),
+   '[{"question":{"id":"hair","type":"text","label":"Describe your hair","required":true,"highlight":true,"maxLength":200},"value":{"kind":"text","text":"Long and red"}},{"question":{"id":"hobby","type":"text","label":"A hobby or favourite thing","highlight":true,"maxLength":200},"value":{"kind":"text","text":"Knitting"}},{"question":{"id":"colour","type":"select","label":"Favourite colour","options":["Red","Blue","Green"],"allowOther":true,"highlight":true},"value":{"kind":"other","text":"Teal"}},{"question":{"id":"mug","type":"radio","label":"Mug size","options":["Regular","Large"],"required":true},"value":{"kind":"choice","choice":"Regular"}}]', 'in_progress', '2026-09-01T11:00:00.000Z'),
   ('00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000001', 'Alan Placeholder', 'alan@example.com',
-   '{"hair":"Bald, big beard","hobby":"Chess"}', 'done', '2026-09-01T12:00:00.000Z'),
+   '[{"question":{"id":"hair","type":"text","label":"Describe your hair","required":true,"highlight":true,"maxLength":200},"value":{"kind":"text","text":"Bald, big beard"}},{"question":{"id":"snack","type":"text","label":"Favourite snack","highlight":true},"value":{"kind":"text","text":"Pretzels"}}]', 'done', '2026-09-01T12:00:00.000Z'),
+  ('00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000001', 'Ada''s partner', 'ada@example.com',
+   '[{"question":{"id":"hair","type":"text","label":"Describe your hair","required":true,"highlight":true,"maxLength":200},"value":{"kind":"text","text":"Shaved, grey stubble"}},{"question":{"id":"mug","type":"radio","label":"Mug size","options":["Regular","Large"],"required":true},"value":{"kind":"choice","choice":"Regular"}}]', 'new', '2026-09-01T13:00:00.000Z'),
   ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000002', 'Mary Draft', 'mary@example.com',
-   '{"look":"Grey bob, round glasses"}', 'new', '2026-09-02T10:00:00.000Z')
+   '[{"question":{"id":"look","type":"text","label":"Describe how you look","required":true,"highlight":true,"multiline":true},"value":{"kind":"text","text":"Grey bob, round glasses\nUsually in a green scarf"}}]', 'new', '2026-09-02T10:00:00.000Z')
 ON CONFLICT (id) DO NOTHING;

@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers'
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { ChannelSummary, Library } from '../../shared/api-types'
+import type { IntakeSettings } from '../../shared/intake'
 import { STICK_RIG } from '../../shared/stick-rig'
 import { createTestAccessKeys } from '../../test/access-tokens'
 import { insertAsset, insertChannel } from '../../test/fixtures'
@@ -100,6 +101,32 @@ describe('creating a channel', () => {
 
   it('refuses an address that would not work in a URL', async () => {
     const response = await createChannel({ name: 'Spaces', slug: 'has spaces' })
+
+    expect(response.status).toBe(400)
+  })
+})
+
+describe('channel intake settings', () => {
+  const putIntake = (body: unknown) => send(`/channels/${CHANNEL_A}/intake`, { method: 'PUT', body: JSON.stringify(body) })
+
+  it('saves the form whole and serves it back cleaned', async () => {
+    await putIntake({
+      instructions: 'Line one\r\nLine two',
+      questions: [{ id: 'size', type: 'select', label: ' Mug size ', options: ['Small', 'Large'], allowOther: true }],
+      thankYouMessage: 'Thanks!',
+    })
+
+    const intake = await (await send(`/channels/${CHANNEL_A}/intake`)).json<IntakeSettings>()
+
+    expect(intake.instructions).toBe('Line one\nLine two')
+    expect(intake.questions).toEqual([expect.objectContaining({ id: 'size', label: 'Mug size', allowOther: true, required: false })])
+    expect(intake.thankYouMessage).toBe('Thanks!')
+  })
+
+  it('refuses a form that asks for more than three images', async () => {
+    const images = ['a', 'b', 'c', 'd'].map(id => ({ id, type: 'image', label: `Image ${id}` }))
+
+    const response = await putIntake({ questions: images })
 
     expect(response.status).toBe(400)
   })

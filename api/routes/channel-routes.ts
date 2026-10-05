@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { CreateBatchRequest, CreateChannelRequest } from '../../shared/api-types'
+import { IntakeSettings } from '../../shared/intake'
 import { STICK_RIG } from '../../shared/stick-rig'
 import type { AppEnv } from '../app'
 import { requireFound } from '../http-errors'
@@ -34,4 +35,14 @@ export const channelRoutes = new Hono<AppEnv>()
   .get('/:channelId/library', async (c) => {
     const channel = await requireChannel(c, c.req.param('channelId'))
     return c.json(await createLibraryService({ db: c.env.DB, channel }).get())
+  })
+  .get('/:channelId/intake', async (c) => {
+    const channel = await requireChannel(c, c.req.param('channelId'))
+    return c.json(channel.intake)
+  })
+  .put('/:channelId/intake', zValidator('json', IntakeSettings), async (c) => {
+    const channel = await requireChannel(c, c.req.param('channelId'))
+    const intake = c.req.valid('json')
+    await createChannelService(c.env.DB).saveIntake(channel.id, intake)
+    return c.json(intake)
   })

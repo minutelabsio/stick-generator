@@ -1,17 +1,11 @@
 import { z } from 'zod'
 import { FigureConfig } from './figure'
+import { cleanText, SubmittedAnswers } from './intake'
+import type { Question } from './intake'
 import type { AssetPart, Rig } from './rig'
 
 export const ENTRY_STATUSES = ['new', 'in_progress', 'done', 'skipped'] as const
 export type EntryStatus = typeof ENTRY_STATUSES[number]
-
-export const Question = z.object({
-  id: z.string(),
-  label: z.string(),
-  required: z.boolean().default(false),
-  highlight: z.boolean().default(false),
-})
-export type Question = z.infer<typeof Question>
 
 export interface ChannelSummary {
   id: string
@@ -46,15 +40,26 @@ export interface EntrySummary {
 
 export interface BatchDetail extends BatchSummary {
   channelId: string
-  questions: Question[]
-  contactEmail: string | null
   entries: EntrySummary[]
+}
+
+// One answer as the team sees it, labelled as the question was asked.
+export interface EntryAnswer {
+  questionId: string
+  label: string
+  // From the channel's current form while it still has the question, so turning
+  // highlight on or off applies to entries already submitted.
+  highlight: boolean
+  // The text typed, or the option picked. Null for an image answer.
+  text: string | null
+  isOther: boolean
+  imageUrl: string | null
 }
 
 export interface EntryDetail extends EntrySummary {
   batchId: string
   channelId: string
-  answers: Record<string, string>
+  answers: EntryAnswer[]
   likenessUrl: string | null
   figure: FigureConfig | null
   updatedBy: string | null
@@ -78,8 +83,6 @@ export interface Library {
 export const CreateBatchRequest = z.object({
   name: z.string().trim().min(1).max(100),
   closesAt: z.iso.datetime(),
-  questionLabels: z.array(z.string().trim().min(1).max(200)).max(20),
-  contactEmail: z.email().optional(),
 })
 export type CreateBatchRequest = z.infer<typeof CreateBatchRequest>
 
@@ -99,7 +102,10 @@ export interface JoinBatch {
   channelName: string | null
   batchName: string | null
   closesAt: string | null
+  instructions: string
   questions: Question[]
+  thankYouMessage: string
+  consentText: string
   contactEmail: string | null
 }
 
@@ -111,13 +117,17 @@ function tryParseJson(raw: string): unknown {
   }
 }
 
+// Applies to the photo and to each image answer.
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 
+// Each image answer arrives as its own multipart file under this prefix plus the question id.
+export const IMAGE_ANSWER_FIELD_PREFIX = 'image:'
+
 export const SubmissionFields = z.object({
-  name: z.string().trim().min(1, 'Please enter your name.').max(100),
-  email: z.email('Please enter a valid email address.').max(200),
+  name: z.string().transform(raw => cleanText(raw, { multiline: false })).pipe(z.string().min(1, 'Please enter your name.').max(100)),
+  email: z.string().trim().pipe(z.email('Please enter a valid email address.').max(200)),
   answers: z.string().transform((raw, context) => {
-    const parsed = z.record(z.string(), z.string().max(500)).safeParse(tryParseJson(raw))
+    const parsed = SubmittedAnswers.safeParse(tryParseJson(raw))
     if (parsed.success) return parsed.data
     context.addIssue({ code: 'custom', message: 'Answers were not in the expected format.' })
     return z.NEVER

@@ -7,7 +7,6 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import MeterGroup from 'primevue/metergroup'
 import Message from 'primevue/message'
-import Textarea from 'primevue/textarea'
 import Toolbar from 'primevue/toolbar'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref, watch } from 'vue'
@@ -39,7 +38,6 @@ function emptyNewBatch() {
   return {
     name: '',
     closesAt: new Date(Date.now() + DEFAULT_WINDOW_DAYS * MILLISECONDS_PER_DAY),
-    questions: 'Describe your hair\nA hobby or favourite thing',
   }
 }
 
@@ -65,7 +63,6 @@ async function createBatch() {
     const { id } = await api.createBatch(channel.value.id, {
       name: newBatch.value.name,
       closesAt: newBatch.value.closesAt.toISOString(),
-      questionLabels: newBatch.value.questions.split('\n').map(line => line.trim()).filter(Boolean),
     })
     isCreating.value = false
     newBatch.value = emptyNewBatch()
@@ -192,13 +189,9 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
             hour-format="24"
           />
         </label>
-        <label>
-          Questions (one per line)
-          <Textarea
-            v-model="newBatch.questions"
-            rows="4"
-          />
-        </label>
+        <p class="muted hint">
+          Followers answer this channel's intake form.
+        </p>
         <Button
           type="submit"
           label="Create batch"
@@ -241,6 +234,11 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--text-md);
 }
 
 .form label {

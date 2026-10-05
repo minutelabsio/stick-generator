@@ -72,13 +72,7 @@ const activeColorRoles = computed(() => {
   return activeSlot.value.colorRoles.flatMap(roleId => colorRoleById(currentRig, roleId) ?? [])
 })
 const assetsById = computed(() => new Map(library.value?.assets.map(asset => [asset.id, asset])))
-const highlightedAnswers = computed(() => {
-  if (!entry.value || !batch.value) return []
-  const answers = entry.value.answers
-  return batch.value.questions
-    .filter(question => question.highlight)
-    .map(question => ({ label: question.label, answer: answers[question.id] ?? '—' }))
-})
+const highlightedAnswers = computed(() => entry.value?.answers.filter(answer => answer.highlight) ?? [])
 const neighbours = computed(() => {
   const entryIds = batch.value?.entries.map(summary => summary.id) ?? []
   const index = entryIds.indexOf(props.entryId)
@@ -434,11 +428,26 @@ onMounted(() => loadEntry(props.entryId))
         </p>
         <dl class="answers">
           <template
-            v-for="item in highlightedAnswers"
-            :key="item.label"
+            v-for="answer in highlightedAnswers"
+            :key="answer.questionId"
           >
-            <dt>{{ item.label }}</dt>
-            <dd>{{ item.answer }}</dd>
+            <dt>{{ answer.label }}</dt>
+            <dd v-if="answer.imageUrl">
+              <a
+                :href="answer.imageUrl"
+                target="_blank"
+                rel="noopener"
+              >
+                <img
+                  :src="answer.imageUrl"
+                  :alt="answer.label"
+                  class="answer-image"
+                >
+              </a>
+            </dd>
+            <dd v-else>
+              {{ answer.isOther ? `Other: ${answer.text}` : answer.text }}
+            </dd>
           </template>
         </dl>
       </aside>
@@ -674,6 +683,14 @@ onMounted(() => loadEntry(props.entryId))
 .answers dd {
   margin: 0.15rem 0 0;
   font-weight: 600;
+  white-space: pre-line;
+}
+
+.answer-image {
+  display: block;
+  max-width: 100%;
+  max-height: 10rem;
+  border-radius: var(--p-border-radius-md);
 }
 
 .proof-column {

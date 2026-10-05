@@ -1,5 +1,3 @@
-import { z } from 'zod'
-import { Question } from '../../shared/api-types'
 import type { BatchDetail, BatchSummary, CreateBatchRequest, EntryStatus, EntrySummary } from '../../shared/api-types'
 import { generateJoinCode } from '../../shared/join-code'
 import { slugify } from '../../shared/slug'
@@ -12,8 +10,6 @@ interface GroupRow {
   join_code: string | null
   opens_at: string | null
   closes_at: string | null
-  questions: string
-  contact_email: string | null
 }
 
 interface StatusCountRow {
@@ -31,8 +27,6 @@ interface EntrySummaryRow {
   render_key: string | null
   rendered_at: string | null
 }
-
-const StoredQuestions = z.array(Question)
 
 const EMPTY_STATUS_COUNTS: Record<EntryStatus, number> = { new: 0, in_progress: 0, done: 0, skipped: 0 }
 
@@ -63,20 +57,17 @@ export function createBatchService(db: D1Database) {
       return {
         ...toBatchSummary(group, statusCounts),
         channelId: group.channel_id,
-        questions: StoredQuestions.parse(JSON.parse(group.questions)),
-        contactEmail: group.contact_email,
         entries: entries.results.map(toEntrySummary),
       }
     },
 
     async create(channelId: string, request: CreateBatchRequest): Promise<{ id: string }> {
       const id = crypto.randomUUID()
-      const questions = request.questionLabels.map((label, index) => ({ id: `q${index + 1}`, label, required: false, highlight: true }))
       await db
-        .prepare(`INSERT INTO groups (id, channel_id, slug, name, source, questions, join_code, opens_at, closes_at, contact_email)
-                  VALUES (?, ?, ?, ?, 'intake', ?, ?, ?, ?, ?)`)
-        .bind(id, channelId, `${slugify(request.name)}-${id.slice(0, 8)}`, request.name, JSON.stringify(questions),
-          generateJoinCode(), new Date().toISOString(), request.closesAt, request.contactEmail ?? null)
+        .prepare(`INSERT INTO groups (id, channel_id, slug, name, source, join_code, opens_at, closes_at)
+                  VALUES (?, ?, ?, ?, 'intake', ?, ?, ?)`)
+        .bind(id, channelId, `${slugify(request.name)}-${id.slice(0, 8)}`, request.name,
+          generateJoinCode(), new Date().toISOString(), request.closesAt)
         .run()
       return { id }
     },

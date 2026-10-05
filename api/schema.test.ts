@@ -63,4 +63,21 @@ describe('schema constraints', () => {
     await insertPalette('channel-b', 'hair').run()
     await expect(insertPalette('channel-a', 'hair').run()).rejects.toThrow(/UNIQUE constraint failed/)
   })
+
+  it('rejects entry answers that are not a list', async () => {
+    await insertGroup()
+    const insert = env.DB
+      .prepare('INSERT INTO entries (id, group_id, answers) VALUES (?, ?, ?)')
+      .bind('entry-2', GROUP_ID, '{"hair":"Curly"}')
+
+    await expect(insert.run()).rejects.toThrow(/CHECK constraint failed/)
+  })
+
+  it('rejects channel intake settings that are not an object', async () => {
+    const insert = env.DB
+      .prepare('INSERT INTO channels (id, slug, name, rig, intake) VALUES (?, ?, ?, ?, ?)')
+      .bind('channel-c', 'channel-c', 'Channel C', '{}', '[]')
+
+    await expect(insert.run()).rejects.toThrow(/CHECK constraint failed/)
+  })
 })

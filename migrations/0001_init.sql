@@ -9,6 +9,9 @@ CREATE TABLE channels (
   name         TEXT NOT NULL,
   rig          TEXT NOT NULL CHECK (json_valid(rig)),
   rig_revision INTEGER NOT NULL DEFAULT 1 CHECK (rig_revision >= 1),
+  -- IntakeSettings (shared/intake.ts): instructions, questions, thank-you message,
+  -- consent text, and contact email. Every batch in the channel asks these.
+  intake       TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(intake) AND json_type(intake) = 'object'),
   created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   archived_at  TEXT
 );
@@ -20,15 +23,12 @@ CREATE TABLE groups (
   slug            TEXT NOT NULL UNIQUE,
   name            TEXT NOT NULL,
   source          TEXT NOT NULL CHECK (source IN ('intake', 'manual', 'v1')),
-  questions       TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(questions)),
   -- NULL join_code means intake is disabled (manual-only batch).
   join_code       TEXT UNIQUE,
   opens_at        TEXT,
   closes_at       TEXT,
   max_submissions INTEGER CHECK (max_submissions IS NULL OR max_submissions > 0),
   allowlist_on    INTEGER NOT NULL DEFAULT 0 CHECK (allowlist_on IN (0, 1)),
-  consent_text    TEXT,
-  contact_email   TEXT,
   created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   archived_at     TEXT,
   -- An open batch must have a window that closes after it opens.
@@ -42,7 +42,9 @@ CREATE TABLE entries (
   group_id        TEXT NOT NULL REFERENCES groups(id),
   name            TEXT,
   email           TEXT,
-  answers         TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(answers)),
+  -- [{ question, value }]: each answer beside a copy of the question as it was asked,
+  -- so changing the channel's form never changes what an old entry shows.
+  answers         TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(answers) AND json_type(answers) = 'array'),
   likeness_key    TEXT,
   status          TEXT NOT NULL DEFAULT 'new'
                     CHECK (status IN ('new', 'in_progress', 'done', 'skipped')),
@@ -54,12 +56,11 @@ CREATE TABLE entries (
   render_stale    INTEGER NOT NULL DEFAULT 0 CHECK (render_stale IN (0, 1)),
   submitted_at    TEXT,
   consent_at      TEXT,
-  consent_version TEXT,
-  duplicate_of    TEXT REFERENCES entries(id),
+  -- The exact consent text agreed to.
+  consent_text    TEXT,
   submit_ip_hash  TEXT,
   updated_by      TEXT,
-  updated_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-  CHECK (duplicate_of IS NULL OR duplicate_of <> id)
+  updated_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 CREATE INDEX idx_entries_group_status ON entries (group_id, status);
 CREATE INDEX idx_entries_group_email ON entries (group_id, lower(email));

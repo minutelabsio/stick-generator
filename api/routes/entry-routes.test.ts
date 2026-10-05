@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers'
 import { beforeAll, describe, expect, it } from 'vitest'
+import type { EntryDetail } from '../../shared/api-types'
 import { createTestAccessKeys } from '../../test/access-tokens'
 import { insertAsset, insertChannel, TEST_CHANNEL_ID } from '../../test/fixtures'
 import { createApp } from '../app'
@@ -38,6 +39,28 @@ describe('GET /api/entries/:id', () => {
     const entry = await (await getEntry()).json<{ channelId: string }>()
 
     expect(entry.channelId).toBe(TEST_CHANNEL_ID)
+  })
+
+  it('shows answers as they were asked, with highlight from the current form', async () => {
+    const asked = { id: 'hobby', type: 'text', label: 'A hobby', highlight: false }
+    const removed = { id: 'snack', type: 'text', label: 'Favourite snack', highlight: true }
+    await env.DB.batch([
+      env.DB.prepare('UPDATE entries SET answers = ? WHERE id = ?').bind(JSON.stringify([
+        { question: asked, value: { kind: 'text', text: 'Chess' } },
+        { question: removed, value: { kind: 'text', text: 'Pretzels' } },
+      ]), ENTRY_ID),
+      // Since answering, the question was reworded and highlighted, and "snack" was removed.
+      env.DB.prepare('UPDATE channels SET intake = ? WHERE id = ?').bind(JSON.stringify({
+        questions: [{ ...asked, label: 'Your favourite hobby', highlight: true }],
+      }), TEST_CHANNEL_ID),
+    ])
+
+    const entry = await (await getEntry()).json<EntryDetail>()
+
+    expect(entry.answers.map(({ label, text, highlight }) => ({ label, text, highlight }))).toEqual([
+      { label: 'A hobby', text: 'Chess', highlight: true },
+      { label: 'Favourite snack', text: 'Pretzels', highlight: true },
+    ])
   })
 })
 
