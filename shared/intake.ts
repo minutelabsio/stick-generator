@@ -79,7 +79,7 @@ const ImageQuestion = QuestionBase.extend({ type: z.literal('image') })
 export const Question = z.discriminatedUnion('type', [TextQuestion, EmailQuestion, SelectQuestion, RadioQuestion, ImageQuestion])
 export type Question = z.infer<typeof Question>
 export type QuestionType = Question['type']
-type QuestionOf<T extends QuestionType> = Extract<Question, { type: T }>
+export type QuestionOf<T extends QuestionType> = Extract<Question, { type: T }>
 
 export const QUESTION_TYPES = ['text', 'email', 'select', 'radio', 'image'] as const satisfies readonly QuestionType[]
 

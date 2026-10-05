@@ -1,5 +1,6 @@
 import { ApiError } from '@shared/api-schemas'
 import { JOIN_CODE_HEADER } from '@shared/api-types'
+import type { IntakeSettings } from '@shared/intake'
 import type {
   BatchDetail,
   BatchSummary,
@@ -44,6 +45,9 @@ export const api = {
     request<EntryDetail>(`/api/entries/${entryId}`, sendJson('PATCH', changes)),
   uploadRender: (entryId: string, png: Blob) =>
     request<EntryDetail>(`/api/entries/${entryId}/render`, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: png }),
+  getIntake: (channelId: string) => request<IntakeSettings>(`/api/channels/${channelId}/intake`),
+  saveIntake: (channelId: string, intake: IntakeSettings) =>
+    request<IntakeSettings>(`/api/channels/${channelId}/intake`, sendJson('PUT', intake)),
   getLibrary: (channelId: string) => request<Library>(`/api/channels/${channelId}/library`),
   getJoinBatch: (joinCode: string) => request<JoinBatch>('/api/public/batch', { headers: { [JOIN_CODE_HEADER]: joinCode } }),
   submitJoin: (joinCode: string, form: FormData) =>

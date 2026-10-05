@@ -96,6 +96,12 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
         <div class="header-group">
           <ChannelSwitcher :channel-slug="channelSlug" />
           <RouterLink
+            :to="{ name: 'intake', params: { channelSlug } }"
+            class="manage-channels"
+          >
+            Intake form
+          </RouterLink>
+          <RouterLink
             :to="{ name: 'channels' }"
             class="manage-channels"
           >
