@@ -116,6 +116,7 @@ export type AnswerValue = z.infer<typeof AnswerValue>
 // form changes.
 export const StoredAnswer = z.object({ question: Question, value: AnswerValue })
 export type StoredAnswer = z.infer<typeof StoredAnswer>
+export const StoredAnswers = z.array(StoredAnswer)
 
 // The join page sends each choice as the option's text, and "Other" as { other }.
 export const SubmittedAnswerValue = z.union([z.string(), z.object({ other: z.string() })])

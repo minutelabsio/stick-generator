@@ -1,7 +1,6 @@
-import { z } from 'zod'
 import { FigureConfig, unknownFigureKeys } from '../../shared/figure'
-import { IntakeSettings, StoredAnswer } from '../../shared/intake'
-import type { AnswerValue, Question } from '../../shared/intake'
+import { IntakeSettings, StoredAnswers } from '../../shared/intake'
+import type { AnswerValue, Question, StoredAnswer } from '../../shared/intake'
 import type { Rig } from '../../shared/rig'
 import type { EntryAnswer, EntryDetail, EntryStatus, UpdateEntryRequest } from '../../shared/api-types'
 import { fileUrl } from '../files'
@@ -38,8 +37,6 @@ interface MisplacedAssetRow {
   slot: string
   asset_id: string
 }
-
-const StoredAnswers = z.array(StoredAnswer)
 
 export function createEntryService({ db, figureBucket, channels }: EntryServiceDependencies) {
   const findRow = (entryId: string) => db

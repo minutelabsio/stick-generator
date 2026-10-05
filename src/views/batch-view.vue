@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
@@ -72,6 +73,17 @@ onBeforeUnmount(() => clearInterval(refreshTimer))
         <template #start>
           <h1>{{ batch.name }}</h1>
         </template>
+        <template #end>
+          <Button
+            as="a"
+            :href="`/api/batches/${batch.id}/export.csv`"
+            download
+            label="Download CSV"
+            icon="pi pi-download"
+            severity="secondary"
+            class="download"
+          />
+        </template>
       </Toolbar>
 
       <BatchIntakePanel
@@ -133,6 +145,10 @@ onBeforeUnmount(() => clearInterval(refreshTimer))
 
 .page-header {
   margin-bottom: 1.5rem;
+}
+
+.download {
+  text-decoration: none;
 }
 
 .entries :deep(tr) {

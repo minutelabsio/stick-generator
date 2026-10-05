@@ -106,3 +106,54 @@ describe('rotating the join code', () => {
     expect(await publicState(after.joinCode)).toBe('open')
   })
 })
+
+describe('exporting responses as CSV', () => {
+  const exportChannel = 'export-channel'
+  const hair = { id: 'hair', type: 'text', label: 'Hair?' }
+  const colour = { id: 'colour', type: 'select', label: 'Colour', options: ['Red'], allowOther: true }
+  const pet = { id: 'pet', type: 'image', label: 'Your pet' }
+  const snack = { id: 'snack', type: 'text', label: 'Favourite snack' }
+
+  beforeAll(async () => {
+    // Since these answers came in, "Hair?" was reworded and the snack question removed.
+    await insertChannel(exportChannel, { questions: [{ ...hair, label: 'Describe your hair' }, colour, pet] })
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO groups (id, channel_id, slug, name, source) VALUES ('export-batch', ?, 'export-batch', 'Export', 'manual')`)
+        .bind(exportChannel),
+      env.DB.prepare(`INSERT INTO entries (id, group_id, name, email, status, submitted_at, likeness_key, answers)
+                      VALUES ('export-1', 'export-batch', ?, 'ada@example.com', 'new', '2026-09-01T10:00:00.000Z', 'v2/likeness/export-1-abcd1234.jpg', ?)`)
+        .bind('=HYPERLINK("https://evil.example")', JSON.stringify([
+          { question: hair, value: { kind: 'text', text: 'Curly, "very"\nand long' } },
+          { question: colour, value: { kind: 'other', text: 'Teal' } },
+          { question: pet, value: { kind: 'image', key: 'v2/answers/export-1/pet-ef567890.jpg' } },
+          { question: snack, value: { kind: 'text', text: 'Pretzels' } },
+        ])),
+      env.DB.prepare(`INSERT INTO entries (id, group_id, name, status, submitted_at) VALUES ('export-2', 'export-batch', 'Grace', 'skipped', '2026-09-02T10:00:00.000Z')`),
+    ])
+  })
+
+  it('downloads every entry with a column per question asked, current form first', async () => {
+    const response = await send('/batches/export-batch/export.csv')
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    // Decoding drops the byte-order mark, so check for it in the raw bytes.
+    const csv = new TextDecoder().decode(bytes)
+
+    expect(response.headers.get('Content-Type')).toBe('text/csv; charset=utf-8')
+    expect(response.headers.get('Content-Disposition')).toBe('attachment; filename="export-batch-responses.csv"')
+    expect(response.headers.get('Cache-Control')).toBe('no-store')
+    expect([...bytes.slice(0, 3)]).toEqual([0xEF, 0xBB, 0xBF])
+    expect(csv.split('\r\n')).toEqual([
+      '"Name","Email","Status","Submitted","Photo","Describe your hair","Colour","Your pet","Favourite snack"',
+      `"'=HYPERLINK(""https://evil.example"")","ada@example.com","new","2026-09-01T10:00:00.000Z","likeness/export-1-abcd1234.jpg",`
+      + '"Curly, ""very""\nand long","Other: Teal","answers/export-1/pet-ef567890.jpg","Pretzels"',
+      '"Grace","","skipped","2026-09-02T10:00:00.000Z","","","","",""',
+      '',
+    ])
+  })
+
+  it('answers 404 for a batch that does not exist', async () => {
+    const response = await send('/batches/no-such-batch/export.csv')
+
+    expect(response.status).toBe(404)
+  })
+})
