@@ -3,11 +3,15 @@ import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import Textarea from 'primevue/textarea'
 import { computed, onMounted, ref } from 'vue'
+import { IMAGE_ANSWER_FIELD_PREFIX } from '@shared/api-types'
 import type { JoinBatch } from '@shared/api-types'
+import { parseAnswers } from '@shared/intake'
 import { normalizeJoinCode } from '@shared/join-code'
+import JoinQuestion from '@/components/join-question.vue'
 import { api } from '@/lib/api'
+import { toSubmittedAnswers } from '@/lib/join-answers'
+import type { AnswerDrafts } from '@/lib/join-answers'
 import { preparePhoto } from '@/lib/prepare-photo'
 import { formatDate } from '@/lib/status'
 
@@ -22,7 +26,9 @@ const isSubmitting = ref(false)
 
 const name = ref('')
 const email = ref('')
-const answers = ref<Record<string, string>>({})
+const answers = ref<AnswerDrafts>({})
+const otherAnswers = ref<AnswerDrafts>({})
+const imageAnswers = ref<Record<string, Blob | null | undefined>>({})
 const consent = ref(false)
 const photo = ref<Blob | null>(null)
 const photoPreviewUrl = ref<string | null>(null)
@@ -55,17 +61,30 @@ async function onPhotoChosen(event: Event) {
   }
 }
 
+// Keyed by question id, only for images actually chosen.
+const chosenImages = () => Object.entries(imageAnswers.value).flatMap(([questionId, blob]) => (blob ? [[questionId, blob] as const] : []))
+
 async function submit() {
+  if (!batch.value) return
   if (!photo.value) {
     errorMessage.value = 'Please add a photo of yourself.'
+    return
+  }
+  const submitted = toSubmittedAnswers(batch.value.questions, answers.value, otherAnswers.value)
+  const images = chosenImages()
+  // The server's own rules, checked first so the follower doesn't wait on an upload to hear them.
+  const checked = parseAnswers(batch.value.questions, submitted, new Set(images.map(([questionId]) => questionId)))
+  if (!checked.success) {
+    errorMessage.value = checked.message
     return
   }
   const form = new FormData()
   form.append('name', name.value)
   form.append('email', email.value)
-  form.append('answers', JSON.stringify(answers.value))
+  form.append('answers', JSON.stringify(submitted))
   form.append('consent', String(consent.value))
   form.append('photo', photo.value, 'photo.jpg')
+  images.forEach(([questionId, blob]) => form.append(`${IMAGE_ANSWER_FIELD_PREFIX}${questionId}`, blob, `${questionId}.jpg`))
   isSubmitting.value = true
   errorMessage.value = null
   try {
@@ -76,6 +95,19 @@ async function submit() {
   } finally {
     isSubmitting.value = false
   }
+}
+
+// People often answer for a partner or friend too, so the same link takes another.
+function startAnother() {
+  name.value = ''
+  answers.value = {}
+  otherAnswers.value = {}
+  imageAnswers.value = {}
+  consent.value = false
+  photo.value = null
+  if (photoPreviewUrl.value) URL.revokeObjectURL(photoPreviewUrl.value)
+  photoPreviewUrl.value = null
+  pageState.value = 'ready'
 }
 
 onMounted(async () => {
@@ -125,8 +157,18 @@ onMounted(async () => {
       </form>
 
       <template v-else-if="pageState === 'submitted'">
-        <h1>Got it, thanks!</h1>
-        <p>We'll draw your stick figure soon. If you need to change anything, reply to your invitation email.</p>
+        <h1>Sent</h1>
+        <p class="message">
+          {{ batch?.thankYouMessage }}
+        </p>
+        <p class="muted">
+          Need to change something? {{ batch?.contactEmail ? `Email ${batch.contactEmail}.` : 'Reply to your invitation email.' }}
+        </p>
+        <Button
+          label="Send another, for someone else"
+          severity="secondary"
+          @click="startAnother"
+        />
       </template>
 
       <template v-else-if="batch?.state === 'closed'">
@@ -145,8 +187,14 @@ onMounted(async () => {
         @submit.prevent="submit"
       >
         <h1>{{ batch.batchName }}</h1>
+        <p
+          v-if="batch.instructions"
+          class="message"
+        >
+          {{ batch.instructions }}
+        </p>
         <p class="muted">
-          Open until {{ formatDate(batch.closesAt) }}. We'll draw a stick figure of you from your photo and answers.
+          Open until {{ formatDate(batch.closesAt) }}.
         </p>
         <label>
           Your name
@@ -165,20 +213,8 @@ onMounted(async () => {
             autocomplete="email"
           />
         </label>
-        <label
-          v-for="question in batch.questions"
-          :key="question.id"
-        >
-          {{ question.label }}
-          <Textarea
-            v-model="answers[question.id]"
-            rows="2"
-            auto-resize
-            :required="question.required"
-          />
-        </label>
         <label>
-          A photo of you
+          A photo of you to draw from
           <input
             type="file"
             accept="image/*"
@@ -191,13 +227,21 @@ onMounted(async () => {
           class="preview"
           alt="Your photo"
         >
+        <JoinQuestion
+          v-for="question in batch.questions"
+          :key="question.id"
+          v-model:answer="answers[question.id]"
+          v-model:other="otherAnswers[question.id]"
+          v-model:image="imageAnswers[question.id]"
+          :question="question"
+        />
         <label class="consent">
           <Checkbox
             v-model="consent"
             binary
             required
           />
-          <span>I agree that my photo and answers can be used to draw my stick figure. Only the team sees them.</span>
+          <span class="message">{{ batch.consentText }}</span>
         </label>
         <Message
           v-if="errorMessage"
@@ -241,10 +285,19 @@ onMounted(async () => {
   text-transform: uppercase;
 }
 
+.message {
+  white-space: pre-line;
+}
+
 .form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/* The flex gap spaces the form, and flex items' margins don't collapse into it. */
+.form p {
+  margin: 0;
 }
 
 .form label {
