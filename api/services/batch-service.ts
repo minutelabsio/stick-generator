@@ -6,6 +6,7 @@ import { fileUrl } from '../files'
 
 interface GroupRow {
   id: string
+  channel_id: string
   name: string
   join_code: string | null
   opens_at: string | null
@@ -36,10 +37,16 @@ const EMPTY_STATUS_COUNTS: Record<EntryStatus, number> = { new: 0, in_progress: 
 
 export function createBatchService(db: D1Database) {
   return {
-    async list(): Promise<BatchSummary[]> {
+    async list(channelId: string): Promise<BatchSummary[]> {
       const [groups, counts] = await Promise.all([
-        db.prepare('SELECT * FROM groups WHERE archived_at IS NULL ORDER BY created_at DESC').all<GroupRow>(),
-        db.prepare('SELECT group_id, status, count(*) AS count FROM entries GROUP BY group_id, status').all<StatusCountRow>(),
+        db.prepare('SELECT * FROM groups WHERE channel_id = ? AND archived_at IS NULL ORDER BY created_at DESC')
+          .bind(channelId)
+          .all<GroupRow>(),
+        db.prepare(`SELECT group_id, status, count(*) AS count FROM entries
+                    WHERE group_id IN (SELECT id FROM groups WHERE channel_id = ?)
+                    GROUP BY group_id, status`)
+          .bind(channelId)
+          .all<StatusCountRow>(),
       ])
       return groups.results.map(group => toBatchSummary(group, counts.results))
     },
@@ -54,19 +61,20 @@ export function createBatchService(db: D1Database) {
       const statusCounts = entries.results.map(entry => ({ group_id: batchId, status: entry.status, count: 1 }))
       return {
         ...toBatchSummary(group, statusCounts),
+        channelId: group.channel_id,
         questions: StoredQuestions.parse(JSON.parse(group.questions)),
         contactEmail: group.contact_email,
         entries: entries.results.map(toEntrySummary),
       }
     },
 
-    async create(request: CreateBatchRequest): Promise<{ id: string }> {
+    async create(channelId: string, request: CreateBatchRequest): Promise<{ id: string }> {
       const id = crypto.randomUUID()
       const questions = request.questionLabels.map((label, index) => ({ id: `q${index + 1}`, label, required: false, highlight: true }))
       await db
-        .prepare(`INSERT INTO groups (id, slug, name, source, questions, join_code, opens_at, closes_at, contact_email)
-                  VALUES (?, ?, ?, 'intake', ?, ?, ?, ?, ?)`)
-        .bind(id, `${slugify(request.name)}-${id.slice(0, 8)}`, request.name, JSON.stringify(questions),
+        .prepare(`INSERT INTO groups (id, channel_id, slug, name, source, questions, join_code, opens_at, closes_at, contact_email)
+                  VALUES (?, ?, ?, ?, 'intake', ?, ?, ?, ?, ?)`)
+        .bind(id, channelId, `${slugify(request.name)}-${id.slice(0, 8)}`, request.name, JSON.stringify(questions),
           generateJoinCode(), new Date().toISOString(), request.closesAt, request.contactEmail ?? null)
         .run()
       return { id }

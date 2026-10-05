@@ -13,6 +13,12 @@ export const Question = z.object({
 })
 export type Question = z.infer<typeof Question>
 
+export interface ChannelSummary {
+  id: string
+  slug: string
+  name: string
+}
+
 export interface BatchSummary {
   id: string
   name: string
@@ -32,6 +38,7 @@ export interface EntrySummary {
 }
 
 export interface BatchDetail extends BatchSummary {
+  channelId: string
   questions: Question[]
   contactEmail: string | null
   entries: EntrySummary[]

@@ -4,6 +4,7 @@ import type { MeResponse } from '../shared/api-schemas'
 import { logger } from './logger'
 import { createAccessAuth, createRemoteAccessKeys } from './middleware/access-auth'
 import { batchRoutes } from './routes/batch-routes'
+import { channelRoutes } from './routes/channel-routes'
 import { entryRoutes } from './routes/entry-routes'
 import { fileRoutes } from './routes/file-routes'
 import { libraryRoutes } from './routes/library-routes'
@@ -32,6 +33,7 @@ export function createApp({ resolveAccessKeys = createRemoteAccessKeys() }: AppO
   app.use('*', createAccessAuth(resolveAccessKeys))
 
   app.get('/me', c => c.json({ email: c.var.user.email } satisfies MeResponse))
+  app.route('/channels', channelRoutes)
   app.route('/batches', batchRoutes)
   app.route('/entries', entryRoutes)
   app.route('/library', libraryRoutes)
