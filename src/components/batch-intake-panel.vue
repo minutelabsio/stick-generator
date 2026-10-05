@@ -11,7 +11,7 @@ import { UpdateBatchRequest } from '@shared/api-types'
 import type { BatchDetail } from '@shared/api-types'
 import { MAX_SUBMISSION_LIMIT } from '@shared/batch-intake'
 import { api } from '@/lib/api'
-import { describeIntake } from '@/lib/status'
+import { describeIntake, localTimeZoneLabel } from '@/lib/status'
 
 const ROTATE_PROMPT = 'Replace the join code? The current link stops working at once, so you will need to send everyone the new one.'
 
@@ -159,7 +159,7 @@ async function rotateCode() {
         <InputText v-model="draft.name" />
       </label>
       <label>
-        Closes on
+        <span>Closes on <span class="muted optional">{{ localTimeZoneLabel() }}</span></span>
         <DatePicker
           v-model="draft.closesAt"
           show-time
@@ -238,6 +238,10 @@ async function rotateCode() {
   flex-direction: column;
   gap: 0.35rem;
   font-weight: 600;
+}
+
+.optional {
+  font-weight: 400;
 }
 
 @media (width <= 48rem) {

@@ -57,5 +57,32 @@ export const describeSubmissions = (batch: Pick<BatchSummary, 'submittedCount' |
   batch.maxSubmissions === null ? `${batch.submittedCount} submitted` : `${batch.submittedCount} / ${batch.maxSubmissions} submitted`
 
 export const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—')
-export const formatDateTime = (iso: string | null) =>
-  (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—')
+// Close times are one instant shown in each viewer's own zone, so the zone is always
+// named: a follower abroad must not read "Oct 20" as a whole day that isn't theirs.
+// Listed field by field because dateStyle can't be combined with timeZoneName.
+const DATE_TIME_WITH_ZONE: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZoneName: 'short',
+}
+
+// Zone and locale default to the viewer's. Passing them is for tests.
+interface Where {
+  timeZone?: string
+  locale?: string
+}
+
+export const formatDateTime = (iso: string | null, { timeZone, locale }: Where = {}) =>
+  (iso ? new Date(iso).toLocaleString(locale, { ...DATE_TIME_WITH_ZONE, timeZone }) : '—')
+
+// For the close-date pickers, which work in the browser's zone: e.g.
+// "America/Toronto (EDT)".
+export function localTimeZoneLabel({ timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone, locale }: Where = {}) {
+  const abbreviation = new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: 'short' })
+    .formatToParts(new Date())
+    .find(part => part.type === 'timeZoneName')?.value
+  return abbreviation && abbreviation !== timeZone ? `${timeZone} (${abbreviation})` : timeZone
+}

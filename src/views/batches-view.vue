@@ -17,7 +17,7 @@ import { MAX_SUBMISSION_LIMIT } from '@shared/batch-intake'
 import ChannelSwitcher from '@/components/channel-switcher.vue'
 import { api } from '@/lib/api'
 import { rememberChannelId } from '@/lib/last-channel'
-import { describeCounts, describeSubmissions, formatDate, intakeLabel, progressSegments, totalEntries } from '@/lib/status'
+import { describeCounts, describeSubmissions, formatDateTime, intakeLabel, localTimeZoneLabel, progressSegments, totalEntries } from '@/lib/status'
 import { useChannelStore } from '@/stores/channels'
 
 const DEFAULT_WINDOW_DAYS = 14
@@ -169,7 +169,7 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
       </Column>
       <Column header="Closes">
         <template #body="{ data }">
-          {{ formatDate(data.closesAt) }}
+          {{ formatDateTime(data.closesAt) }}
         </template>
       </Column>
     </DataTable>
@@ -193,7 +193,7 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
           />
         </label>
         <label>
-          Closes on
+          <span>Closes on <span class="muted optional">in your time zone, {{ localTimeZoneLabel() }}</span></span>
           <DatePicker
             v-model="newBatch.closesAt"
             show-time

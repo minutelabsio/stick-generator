@@ -13,7 +13,7 @@ import { api } from '@/lib/api'
 import { toSubmittedAnswers } from '@/lib/join-answers'
 import type { AnswerDrafts } from '@/lib/join-answers'
 import { preparePhoto } from '@/lib/prepare-photo'
-import { formatDate } from '@/lib/status'
+import { formatDateTime } from '@/lib/status'
 
 type PageState = 'enter-code' | 'loading' | 'ready' | 'submitted'
 
@@ -194,7 +194,7 @@ onMounted(async () => {
           {{ batch.instructions }}
         </p>
         <p class="muted">
-          Open until {{ formatDate(batch.closesAt) }}.
+          Open until {{ formatDateTime(batch.closesAt) }}.
         </p>
         <label>
           Your name
