@@ -1,7 +1,7 @@
 ---
 status: planned
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-10-05
 summary: "Follower intake via one expiring invite link per batch, replacing Google Forms. Includes the spam and abuse controls."
 ---
 
@@ -21,16 +21,23 @@ Architecture context: [v2-architecture.md](./v2-architecture.md). Build phase:
   A batch is a v2 group.
 - **Hard close.** When the window ends, the link stops working. Anyone who missed it
   emails the team, and the team adds them by hand.
-- **Questions are TBD.** They are configured per batch, so they can change without a
-  deploy. Name, email, photo, and consent are built in and always asked.
+- **Questions belong to the channel**, not the batch: each channel asks its own
+  subscribers its own questions, and every batch in it uses the channel's current
+  form. Admins edit them without a deploy. Name, email, the likeness photo, and consent
+  are built in and always asked.
+- **Questions can change at any time**, including after people have answered. Each
+  entry keeps a copy of the questions it was asked (see [Questions](#questions)).
+- **The same email can submit more than once**, e.g. to answer for a friend or a
+  partner. Each submission is its own entry.
 
 ## Flow
 
 ```
 Team                                        Subscriber
 ────                                        ──────────
-1. Create batch. Set questions, close date,
-   expected size, optional email allowlist
+1. Create batch. Set close date, expected size,
+   optional email allowlist (questions come
+   from the channel)
 2. Copy the batch link
 3. Send it in one email / post to
    subscribers via the usual channel ──────────► 4. Opens https://<host>/join#<code>
@@ -82,6 +89,49 @@ write-once and removes a whole class of "who is allowed to edit this" problems.
 - **Rotate** creates a new code and invalidates the old one immediately. Entries
   already submitted are unaffected.
 
+## Questions
+
+Set per channel on its **Intake form** page: an ordered list, not a form builder.
+
+| Type | Follower sees | Settings |
+|------|---------------|----------|
+| `text` | One line, or a box when `multiline` | `maxLength` (≤ 2000, default 500) |
+| `email` | An email field | none |
+| `select` | A drop-down | `options` (1–50), `allowOther`: adds "Other…" with a text box |
+| `radio` | Radio buttons | `options` (1–50) |
+| `image` | A photo picker | none. At most 3 per form, 5 MB each |
+
+Every question also has a permanent `id` (made when it is added, never edited), a
+`label`, optional `help`, `required`, and `highlight` (show the answer beside the
+editor's canvas). A form has at most 20 questions.
+
+**Robust to change.** An entry stores each answer together with a copy of the
+question as it was asked (label, type, options). Old entries always show what the
+person was actually asked, whatever happens to the form later: a question can be
+reworded, have its options changed, or be removed without breaking or misreporting
+them. Because ids never change, a reworded question is still the same question.
+`highlight` is the exception: it is a display choice, so the editor takes it from the
+channel's current form when the question still exists, and from the copy otherwise.
+
+A follower who loaded the form before an admin changed it submits against the current
+form. Answers to removed questions are dropped. A newly required question that is
+missing gets "This form was updated while you were filling it in. Reload the page
+to see what changed."
+
+## Channel intake settings
+
+Stored together as one JSON document on the channel (`channels.intake`), validated by
+one zod schema, `IntakeSettings` in `shared/`. Like the rig, it is small and always read
+and saved whole.
+
+| Setting | Purpose | Default |
+|---------|---------|---------|
+| `instructions` | Shown at the top of the join form: what the figure is for and what to send. Plain text, line breaks kept, ≤ 2000 characters | none |
+| `questions` | See [Questions](#questions) | empty |
+| `thankYouMessage` | Shown after a successful submit. Plain text, line breaks kept, ≤ 1000 characters | "Got it, thanks! We'll draw your stick figure soon." |
+| `consentText` | Shown next to the required checkbox. Each entry keeps the text it agreed to | default text (needs Q5 answered) |
+| `contactEmail` | Shown in the closed, full, and error messages | none |
+
 ## Batch settings (on the group)
 
 | Setting | Purpose | Default |
@@ -89,9 +139,6 @@ write-once and removes a whole class of "who is allowed to edit this" problems.
 | `opens_at` / `closes_at` | Submission window. Required, because a batch cannot be opened without a close date | now / +14 days |
 | `max_submissions` | Hard cap. The page shows "This batch is full, email us" once it is reached | expected size × 1.25, rounded up |
 | `allowlist` (on/off) + uploaded `name,email` list | Only accept emails on the list | off |
-| `questions` | Ordered list of `{ id, label, help?, type: text\|textarea\|choice, options?, required, maxLength, highlight }` | empty (TBD) |
-| `consent_text` | Shown next to the required checkbox | default text (needs Q5 answered) |
-| `contact_email` | Shown in the closed, full, and error messages | team default |
 
 **Extend** moves `closes_at` later. **Close now** sets it to the current time. Reopening
 a closed batch is just extending it.
@@ -107,22 +154,19 @@ If the team has the subscriber list for a batch, it can turn this on:
 - The list also gives a **"not yet submitted"** view, so the team can chase people
   before the window closes.
 - Limitation: it checks that the email is *on the list*, not that the person *owns* it.
-  Someone holding the link and knowing a subscriber's email could submit as them. That
-  gets caught by the duplicate check below. Proving ownership would need an emailed
-  confirmation code. That is listed as an optional later step, not planned by default.
+  Someone holding the link and knowing a subscriber's email could submit as them.
+  Proving ownership would need an emailed confirmation code. That is listed as an
+  optional later step, not planned by default.
 
-## Duplicates
+## Repeat submissions
 
-With a shared link, the same person may submit twice, or someone may submit using
-another person's email.
+One person may submit several times with the same email, for example for a friend or
+a partner. That is allowed.
 
 - Each submission always creates a **new entry**. Nothing is merged or overwritten.
-- If the email already exists in the batch, the new entry is flagged
-  `duplicate_of = <earlier entry id>`. The queue shows a "Possible duplicate" badge with
-  a side-by-side view: **keep newer**, **keep older**, or **keep both**. The discarded
-  entry becomes `skipped`, not deleted.
-- The follower is told nothing different, to avoid confirming which emails are
-  registered.
+- Entries are not flagged as duplicates. A designer who spots a true repeat marks it
+  `skipped`, and the bulk clean-up (#14) handles junk.
+- The batch cap (#2) is the ceiling on how many entries one leaked link can add.
 
 ## Spam and abuse controls
 
@@ -135,12 +179,12 @@ another person's email.
 | 5 | **Cloudflare Turnstile** on every submit, verified server-side (`siteverify`, checking `hostname` and `action`). Always on, because the link is shared | scripted or bulk submissions | submit handler |
 | 6 | **Per-IP rate limits** on `/api/public/*` (Workers Rate Limiting binding): a loose limit for code checks, a tight one for submits (e.g. 5 / 60 s). Wrong codes count too | code guessing and floods | middleware |
 | 7 | **Optional email allowlist** | people outside the subscriber list | submit handler |
-| 8 | **Duplicate flagging** by email | resubmits and impersonation going unnoticed | submit handler + queue |
-| 9 | **Hard size limits**: photo ≤ 5 MB after client processing (rejected from `Content-Length` before the body is read). Answers checked against the batch's question schema with max lengths | storage and cost abuse | submit handler |
-| 10 | **Photo type check by magic bytes** (JPEG/PNG/WebP only). Stored under a server-chosen key and served to the team with the stored `Content-Type` and `X-Content-Type-Options: nosniff` | disguised files and content-sniffing tricks | submit handler + `/api/files` |
+| 8 | **Answers checked against the channel's form** with the same zod rules on both sides: types, max lengths, options from the list only, "Other" only where allowed. Control characters are stripped and text is NFC-normalised | malformed or oversized answers, invented options | submit handler (shared rules) |
+| 9 | **Hard size limits**: each image ≤ 5 MB after client processing. The whole request is rejected from `Content-Length` before the body is read | storage and cost abuse | submit handler |
+| 10 | **Image type check by magic bytes** (JPEG/PNG/WebP only), for the photo and every image answer. Stored under a server-chosen key and served to the team with the stored `Content-Type` and `X-Content-Type-Options: nosniff`. Uploaded file names are ignored | disguised files and content-sniffing tricks | submit handler + `/api/files` |
 | 11 | **Strict isolation from the team app**: Zero Trust bypass for *only* `/join` and `/api/public/*`. Every other route still requires the Access JWT, with a test that enumerates routes to prove it | a misconfigured bypass exposing team endpoints | Access + Hono |
 | 12 | **Page hardening**: `Referrer-Policy: no-referrer`, a tight CSP (self + `challenges.cloudflare.com`), `X-Frame-Options: DENY`, no third-party scripts | code leakage, clickjacking, and injected scripts | join page responses |
-| 13 | **Answers are plain text only**, rendered as text in the team UI and never as HTML | stored XSS aimed at designers | team UI |
+| 13 | **Answers, question labels, and options are plain text only**, rendered as text in the team UI and on the join page, never as HTML (`vue/no-v-html` fails lint) | stored XSS aimed at designers or followers | team UI + join page |
 | 14 | **Bulk clean-up**: select entries in the queue by submit time and mark them `skipped` | clearing out a burst of junk after a leak | team UI |
 
 Notes:
@@ -168,11 +212,13 @@ Notes:
 5. The photo is uploaded with the submit. The server never sends photos back to the
    public side.
 
+Image answers go through steps 1, 2, 4, and 5. Only the likeness photo is cropped.
+
 ## Consent and privacy
 
-- A required checkbox with the batch's consent text: what the photo is used for, who
+- A required checkbox with the channel's consent text: what the photo is used for, who
   sees it, and how long it's kept.
-- Each entry stores `consent_at` and `consent_version`.
+- Each entry stores `consent_at` and the exact `consent_text` it agreed to.
 - "Purge photos" on archived batches deletes likeness objects and IP hashes, and clears
   the allowlist. How long to keep things is open question Q5.
 
@@ -182,22 +228,22 @@ Changes to [v2-architecture.md](./v2-architecture.md#data-model-d1). They fold i
 `0001_init.sql`.
 
 ```sql
+-- channels: intake settings
+--   intake           TEXT NOT NULL        -- JSON IntakeSettings, see Channel intake settings
+
 -- groups (= batches): intake settings
 --   join_code        TEXT UNIQUE          -- current code; NULL = intake disabled (manual-only batch)
 --   opens_at         TEXT
 --   closes_at        TEXT
 --   max_submissions  INTEGER
 --   allowlist_on     INTEGER NOT NULL DEFAULT 0
---   questions        TEXT                 -- JSON, see Batch settings
---   consent_text     TEXT
---   contact_email    TEXT
 
 -- entries: submission metadata
+--   answers          TEXT NOT NULL        -- JSON [{ question: <copy as asked>, value }]
 --   status           new | in_progress | done | skipped
 --   submitted_at     TEXT                 -- NULL for manual / v1 entries
 --   consent_at       TEXT
---   consent_version  TEXT
---   duplicate_of     TEXT REFERENCES entries(id)
+--   consent_text     TEXT                 -- the text agreed to
 --   submit_ip_hash   TEXT
 
 CREATE TABLE batch_allowlist (
@@ -210,8 +256,11 @@ CREATE TABLE batch_allowlist (
 CREATE INDEX idx_entries_group_email ON entries (group_id, lower(email));
 ```
 
-The v1 migration builds a `questions` list from each old CSV's headers, so old batches
-display the same way as new ones.
+Image answers are stored in R2 at `v2/answers/<entryId>/<questionId>-<random>.<ext>`,
+and the answer holds that key.
+
+The v1 migration turns each old CSV column into a `text` question copy on each entry's
+answers, so old entries display the same way as new ones.
 
 ## API
 
@@ -219,35 +268,36 @@ Public (Zero Trust bypass, code in the `X-Join-Code` header):
 
 | Method + path | Purpose |
 |---------------|---------|
-| `GET /api/public/batch` | Validates the code. Returns `{ batchName, state: open\|not_yet_open\|closed\|full, closesAt, questions, consentText, contactEmail }`. A wrong code returns the same shape as `closed`, so it gives nothing away |
-| `POST /api/public/submission` | Multipart: `name`, `email`, `answers` (JSON), `photo`, `consent`, `turnstileToken`. Creates one entry. Returns `{ ok: true }` |
+| `GET /api/public/batch` | Validates the code. Returns `{ channelName, batchName, state: open\|not_yet_open\|closed\|full, closesAt, instructions, questions, thankYouMessage, consentText, contactEmail }`. A wrong code returns the same shape as `closed`, so it gives nothing away |
+| `POST /api/public/submission` | Multipart: `name`, `email`, `answers` (JSON, keyed by question id), `photo`, one `image:<questionId>` file per image answer, `consent`, `turnstileToken`. Creates one entry. Returns `{ ok: true }` |
 
 Team (Access):
 
 | Method + path | Purpose |
 |---------------|---------|
-| `PATCH /api/groups/:id` | Batch settings (window, cap, questions, consent, contact, allowlist toggle) |
+| `GET` · `PUT /api/channels/:id/intake` | The channel's instructions, questions, thank-you message, consent text, and contact email |
+| `PATCH /api/groups/:id` | Batch settings (window, cap, allowlist toggle) |
 | `POST /api/groups/:id/rotate-code` | New code. The old one is invalid immediately |
 | `PUT /api/groups/:id/allowlist` · `GET …/allowlist?status=pending` | Replace the list. See who hasn't submitted |
-| `POST /api/entries/:id/resolve-duplicate` | Keep newer, keep older, or keep both |
 
 ## Team UI
 
-- **Batch → Settings**: window, cap, contact, consent, and allowlist upload. There is a
-  **questions** editor (an ordered list, not a form builder) and a **Preview** button
+- **Channel → Intake form**: instructions, the questions editor (an ordered list, not a
+  form builder), thank-you message, consent text, and contact email.
+- **Batch → Settings**: window, cap, and allowlist upload, plus a **Preview** button
   that opens the join page in no-submit mode.
 - **Batch → Share**: the link and the code, each with a copy button, a status line
   ("Open, closes Fri 3 Oct, 41 / 60 submitted"), plus **Extend**, **Close now**, and
   **Rotate code**.
-- **Queue**: "Possible duplicate" badges and the resolve view. Multi-select to skip
-  entries. With the allowlist on, a "Not yet submitted" list.
+- **Queue**: multi-select to skip entries. With the allowlist on, a "Not yet
+  submitted" list.
 
 ## The join page
 
 - A **separate, lightweight Vite entry** (`join.html`) that doesn't ship the team app.
   It should load fast on mobile and has nothing to leak.
-- It is mobile-first and fits on one screen: batch name, name + email, questions, photo +
-  crop, consent, submit.
+- It is mobile-first and fits on one screen: channel and batch name, name + email,
+  photo + crop, the channel's questions, consent, submit.
 - It has clear states for loading, open, not yet open, closed, full, and submitted.
   Every closed, full, or error state names the contact email.
 
@@ -257,11 +307,17 @@ Team (Access):
   holds under concurrent submits.
 - Rotation: the old code fails immediately after rotating.
 - Write-once: the public API has no path to read or modify an existing entry.
-  Duplicate submits create a flagged entry and don't overwrite the original.
+  A second submit with the same email creates a second entry and leaves the first alone.
+- Answers: an option not in the list, "Other" where it isn't allowed, an over-long
+  answer, and a missing required answer are each rejected. Answers to questions the
+  form no longer has are dropped. Control characters are stripped.
+- Changing a question after people answered leaves their entries showing what they
+  were asked.
 - Allowlist: when on, unlisted emails are rejected. When off, any email is accepted.
 - Route guard: every non-public route returns 401/403 without an Access JWT.
-- Upload: oversize photos are rejected before the body is read. Wrong magic bytes are
-  rejected. A failed Turnstile check rejects the submit.
+- Upload: oversize requests are rejected before the body is read. Wrong magic bytes are
+  rejected, for the photo and for image answers. A failed Turnstile check rejects the
+  submit.
 
 ## Open questions
 
@@ -269,5 +325,5 @@ Team (Access):
 |---|----------|-----------------------|
 | I1 | ~~Subscriber list source~~ Only needed if the allowlist is used. Any `name,email` CSV works | Resolved |
 | I2 | ~~Open sign-up?~~ No. Invite only | Resolved |
-| I3 | ~~Default questions~~ TBD. Configured per batch | Resolved |
+| I3 | ~~Default questions~~ None. Configured per channel | Resolved |
 | I4 | Should the allowlist be on by default for new batches? | Off, turned on per batch when a list is available |

@@ -153,12 +153,21 @@ soon. It depends on batches and channels, not on either of them.
 answers and photo through it. Nobody touches a CSV of responses, Drive, or R2 by hand.
 Full design: [v2-public-intake.md](./v2-public-intake.md).
 
-- [ ] Resolve Q5 (retention), which the consent text depends on. The questions
-      themselves are TBD and are configured per batch, so they don't block this phase.
+- [ ] Resolve Q5 (retention), which the default consent text depends on. Questions
+      are configured per channel, so they don't block this phase.
+- [ ] Intake settings per channel, stored as one JSON document: instructions,
+      questions, thank-you message, consent text, and contact email. Question types are
+      text, email, select (optionally with "Other"), radio, and image. Each has a
+      permanent id.
+- [ ] Each entry keeps a copy of the questions it was asked beside its answers, so
+      editing the form never breaks or misreports old entries.
+- [ ] Answers checked on the server against the channel's form with rules shared with
+      the join page. Image answers get the same size and magic-byte checks as the photo.
+- [ ] Intake form page per channel: the settings above, with an ordered questions
+      editor (not a form builder).
 - [ ] Batches screen: create, rename, archive, and progress per batch.
-- [ ] Batch settings: window (`opens_at`/`closes_at`), submission cap, contact email,
-      consent text, questions editor (an ordered list, not a form builder), and an
-      optional allowlist upload.
+- [ ] Batch settings: window (`opens_at`/`closes_at`), submission cap, and an optional
+      allowlist upload.
 - [ ] Share panel: link and code with copy buttons, live status ("41 / 60, closes Fri"),
       plus Extend, Close now, and Rotate code.
 - [ ] Public router (`/api/public/*`), mounted apart from the team routes:
@@ -167,22 +176,22 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
       for a closed batch.
 - [ ] Abuse controls: Turnstile always on, per-IP rate limits (loose for code checks,
       tight for submits), size limits checked before the body is read, magic-byte
-      checks on photos, a salted IP hash on each entry, and security headers on `/join`.
-- [ ] Duplicate handling: flag entries whose email already exists in the batch.
-      Resolve view (keep newer, keep older, keep both). Bulk "skip selected" for
-      clearing junk.
+      checks on every image, a salted IP hash on each entry, and security headers on `/join`.
+- [ ] Repeat submissions with the same email are allowed (answering for a friend or
+      partner) and are not flagged. Bulk "skip selected" for clearing junk.
 - [ ] Zero Trust: add a bypass policy for `/join` and `/api/public/*` only. Add a route
       enumeration test proving every other route needs the Access JWT.
 - [ ] Join page (a separate lightweight entry, mobile-first). The code comes from the
       URL fragment or is typed in, and is stripped from the address bar. Name + email,
       batch questions, photo picker with crop and downscale plus JPEG re-encode (strips
       EXIF), consent. Clear states for open, not yet open, closed, full, and submitted.
-      Closed, full, and error states all name the contact email.
+      Closed, full, and error states all name the contact email. Shows the channel's
+      instructions above the form and its thank-you message after submitting.
 - [ ] Manual entry with photo upload from the team side, for late subscribers who email in.
 - [ ] Tests: those listed in [v2-public-intake.md](./v2-public-intake.md#tests-critical-paths-only).
 
 **Exit:** a staging batch is opened and three testers submit from their phones, and the
-entries show up in the queue. A repeat submit is flagged as a duplicate. After
+entries show up in the queue. A second submit with the same email adds a second entry. After
 "Close now" and after "Rotate code", the old link shows the closed message. A route scan
 confirms that nothing outside `/join` and `/api/public/*` answers without Access.
 
@@ -344,7 +353,7 @@ on its own.
 | The public endpoint gets abused (spam, floods, oversized uploads) | Layered controls in [v2-public-intake.md](./v2-public-intake.md#spam-and-abuse-controls). Nothing can be edited or read through the public API |
 | An Access bypass typo exposes team routes | The app checks the JWT itself on every non-public route. A route enumeration test runs in CI |
 | A batch link leaks (forwarded, posted publicly) | Short window, hard cap, Turnstile, write-once API, one-click rotate, optional allowlist, bulk skip |
-| Someone submits using another subscriber's email | Duplicate flagging with a resolve view. An optional email ownership check in Phase 6 |
+| Someone submits using another subscriber's email | Repeats are allowed by design, so a designer skips a bad one. Bulk skip, the optional allowlist, and an optional email ownership check in Phase 6 |
 | Followers miss the window | Designed for: the closed page names the contact email, and the team adds a manual entry or extends the batch |
 | Photo PII leakage | Access on all team routes, private R2, EXIF stripped in the browser, photo never served back publicly, purge on archive |
 | Large zips hitting Worker CPU/memory limits | Stream the zip (no buffering). Fall back to building the zip in the browser if Q6 says batches are large |

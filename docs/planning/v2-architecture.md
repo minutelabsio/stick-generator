@@ -91,10 +91,10 @@ CREATE TABLE entries (
   group_id      TEXT NOT NULL REFERENCES groups(id),
   name          TEXT,
   email         TEXT,
-  answers       TEXT NOT NULL DEFAULT '{}',  -- JSON keyed by question id, verbatim
+  answers       TEXT NOT NULL DEFAULT '[]',  -- JSON [{ question: <copy as asked>, value }]
   likeness_key  TEXT,                     -- R2 key, null if no photo yet
   status        TEXT NOT NULL DEFAULT 'new',  -- new | in_progress | done | skipped
-  -- + submitted_at, consent_*, duplicate_of, submit_ip_hash: see v2-public-intake.md
+  -- + submitted_at, consent_*, submit_ip_hash: see v2-public-intake.md
   figure        TEXT,                     -- JSON FigureConfig (asset IDs, never URLs)
   version       INTEGER NOT NULL DEFAULT 0,   -- optimistic concurrency
   render_key    TEXT,                     -- R2 key of last saved PNG
@@ -227,7 +227,7 @@ The public routes (`/api/public/*`) are listed in [v2-public-intake.md](./v2-pub
 | `GET /groups` · `POST /groups` · `PATCH /groups/:id` | List (with status counts), create, rename/archive, questions and intake settings |
 | `GET /groups/:id/entries?status=&q=` | Queue for a group |
 | `POST /groups/:id/entries` | Manual entry (e.g. someone emailed a photo) |
-| `POST /groups/:id/rotate-code` · `PUT /groups/:id/allowlist` · `POST /entries/:id/resolve-duplicate` | Batch intake management |
+| `POST /groups/:id/rotate-code` · `PUT /groups/:id/allowlist` | Batch intake management |
 | `GET /entries/:id` · `PATCH /entries/:id` | Read, save `figure`/`status` with `If-Match: <version>` → 409 on conflict |
 | `PUT /entries/:id/render` | Upload PNG, set `render_key`, clear `render_stale` |
 | `PUT /entries/:id/likeness` | Replace or attach a photo |
