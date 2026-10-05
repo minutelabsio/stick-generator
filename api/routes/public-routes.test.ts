@@ -206,6 +206,28 @@ describe('public intake', () => {
     expect(response.status).toBe(413)
   })
 
+  // Without Content-Length the size can only be known by counting what arrives.
+  it('refuses an oversized upload that leaves out its Content-Length, without reading it all', async () => {
+    const chunk = new Uint8Array(1024 * 1024)
+    const chunksToSend = 64
+    let chunksPulled = 0
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        chunksPulled += 1
+        if (chunksPulled > chunksToSend) controller.close()
+        else controller.enqueue(chunk)
+      },
+    })
+    const response = await app.request(`${ORIGIN}/api/public/submission`, {
+      method: 'POST',
+      headers: { 'X-Join-Code': OPEN_CODE, 'Content-Type': 'multipart/form-data; boundary=x' },
+      body,
+    }, env)
+
+    expect(response.status).toBe(413)
+    expect(chunksPulled).toBeLessThan(chunksToSend)
+  })
+
   it.each([
     ['consent is missing', { consent: 'false' }],
     ['answers are not JSON', { answers: 'not json' }],

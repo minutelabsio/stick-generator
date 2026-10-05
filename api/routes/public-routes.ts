@@ -4,6 +4,7 @@ import { IMAGE_ANSWER_FIELD_PREFIX, JOIN_CODE_HEADER, MAX_PHOTO_BYTES, Submissio
 import { MAX_IMAGE_QUESTIONS } from '../../shared/intake'
 import type { AppEnv } from '../app'
 import { httpError } from '../http-errors'
+import { readLimitedFormData } from '../limited-body'
 import { createIntakeService } from '../services/intake-service'
 
 // Allows for the photo, every image answer a form can ask for, multipart overhead, and
@@ -29,10 +30,7 @@ export const publicRoutes = new Hono<AppEnv>()
   .get('/batch', async c => c.json(await intakeService(c).getBatch(requireJoinCode(c))))
   .post('/submission', async (c) => {
     const joinCode = requireJoinCode(c)
-    if (Number(c.req.header('Content-Length') ?? 0) > MAX_SUBMISSION_BYTES) {
-      throw httpError(413, 'Those photos are too large. Please choose ones under 5 MB each.')
-    }
-    const form = await c.req.formData()
+    const form = await readLimitedFormData(c.req.raw, MAX_SUBMISSION_BYTES, 'Those photos are too large. Please choose ones under 5 MB each.')
     const fields = SubmissionFields.safeParse(Object.fromEntries(form))
     if (!fields.success) throw httpError(400, fields.error.issues[0]?.message ?? 'Please check the form and try again.')
     const photo = form.get('photo')
