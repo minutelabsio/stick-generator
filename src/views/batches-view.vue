@@ -85,24 +85,26 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
   <main class="page">
     <Toolbar class="page-header">
       <template #start>
-        <div class="title">
-          <ChannelSwitcher :channel-slug="channelSlug" />
+        <div class="header-group">
           <h1>Batches</h1>
+          <Button
+            label="New batch"
+            icon="pi pi-plus"
+            :disabled="!channel"
+            @click="isCreating = true"
+          />
         </div>
       </template>
       <template #end>
-        <RouterLink
-          :to="{ name: 'channels' }"
-          class="manage-channels"
-        >
-          Manage channels
-        </RouterLink>
-        <Button
-          label="New batch"
-          icon="pi pi-plus"
-          :disabled="!channel"
-          @click="isCreating = true"
-        />
+        <div class="header-group">
+          <ChannelSwitcher :channel-slug="channelSlug" />
+          <RouterLink
+            :to="{ name: 'channels' }"
+            class="manage-channels"
+          >
+            Manage channels
+          </RouterLink>
+        </div>
       </template>
     </Toolbar>
 
@@ -211,14 +213,13 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
   margin-bottom: 1.5rem;
 }
 
-.title {
+.header-group {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
 .manage-channels {
-  margin-right: 1rem;
   font-size: var(--text-md);
 }
 
