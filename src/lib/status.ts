@@ -45,8 +45,17 @@ export const INTAKE_STATE_LABELS: Record<IntakeState, string> = {
 
 export const intakeLabel = (batch: Pick<BatchSummary, 'intakeState'>) => INTAKE_STATE_LABELS[batch.intakeState]
 
+// Says why a closed batch is closed, since the fix differs: switch it on, or move the date.
+export function describeIntake(batch: BatchSummary) {
+  const reason = batch.isOpen ? 'close date passed' : 'switched off'
+  const state = batch.intakeState === 'closed' ? `Closed, ${reason}` : intakeLabel(batch)
+  return [state, describeSubmissions(batch), `closes ${formatDateTime(batch.closesAt)}`].join(' · ')
+}
+
 // e.g. "41 / 60 submitted" or "12 submitted" when there is no limit.
 export const describeSubmissions = (batch: Pick<BatchSummary, 'submittedCount' | 'maxSubmissions'>) =>
   batch.maxSubmissions === null ? `${batch.submittedCount} submitted` : `${batch.submittedCount} / ${batch.maxSubmissions} submitted`
 
 export const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—')
+export const formatDateTime = (iso: string | null) =>
+  (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—')

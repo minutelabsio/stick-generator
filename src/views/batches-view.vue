@@ -4,6 +4,7 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
+import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import MeterGroup from 'primevue/metergroup'
 import Message from 'primevue/message'
@@ -12,10 +13,11 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import type { BatchSummary } from '@shared/api-types'
+import { MAX_SUBMISSION_LIMIT } from '@shared/batch-intake'
 import ChannelSwitcher from '@/components/channel-switcher.vue'
 import { api } from '@/lib/api'
 import { rememberChannelId } from '@/lib/last-channel'
-import { describeCounts, formatDate, intakeLabel, progressSegments, totalEntries } from '@/lib/status'
+import { describeCounts, describeSubmissions, formatDate, intakeLabel, progressSegments, totalEntries } from '@/lib/status'
 import { useChannelStore } from '@/stores/channels'
 
 const DEFAULT_WINDOW_DAYS = 14
@@ -38,6 +40,7 @@ function emptyNewBatch() {
   return {
     name: '',
     closesAt: new Date(Date.now() + DEFAULT_WINDOW_DAYS * MILLISECONDS_PER_DAY),
+    maxSubmissions: null as number | null,
   }
 }
 
@@ -63,7 +66,7 @@ async function createBatch() {
     const { id } = await api.createBatch(channel.value.id, {
       name: newBatch.value.name,
       closesAt: newBatch.value.closesAt.toISOString(),
-      maxSubmissions: null,
+      maxSubmissions: newBatch.value.maxSubmissions,
     })
     isCreating.value = false
     newBatch.value = emptyNewBatch()
@@ -161,6 +164,7 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
       <Column header="Intake">
         <template #body="{ data }">
           <span :class="{ muted: data.intakeState !== 'open' }">{{ intakeLabel(data) }}</span>
+          <span class="muted counts"> · {{ describeSubmissions(data) }}</span>
         </template>
       </Column>
       <Column header="Closes">
@@ -194,9 +198,20 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
             v-model="newBatch.closesAt"
             show-time
             hour-format="24"
+            :min-date="new Date()"
+          />
+        </label>
+        <label>
+          <span>Submission limit <span class="muted optional">optional</span></span>
+          <InputNumber
+            v-model="newBatch.maxSubmissions"
+            :min="1"
+            :max="MAX_SUBMISSION_LIMIT"
+            placeholder="No limit"
           />
         </label>
         <p class="muted hint">
+          The batch starts closed. Check it over, then switch it on from its page.
           Followers answer this channel's intake form.
         </p>
         <Button
@@ -241,6 +256,10 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.optional {
+  font-weight: 400;
 }
 
 .hint {

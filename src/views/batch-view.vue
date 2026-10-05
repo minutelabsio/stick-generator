@@ -1,22 +1,23 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import Toolbar from 'primevue/toolbar'
-import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import type { BatchDetail, EntrySummary } from '@shared/api-types'
+import BatchIntakePanel from '@/components/batch-intake-panel.vue'
 import StatusMark from '@/components/status-mark.vue'
 import { api } from '@/lib/api'
-import { describeSubmissions, formatDate, intakeLabel } from '@/lib/status'
+import { formatDate } from '@/lib/status'
 import { useChannelStore } from '@/stores/channels'
 
 const props = defineProps<{ batchId: string }>()
 
+// Often enough to watch a batch fill up, rare enough not to matter.
+const REFRESH_INTERVAL_MS = 15 * 1000
+
 const router = useRouter()
-const toast = useToast()
 const channelStore = useChannelStore()
 
 const batch = ref<BatchDetail | null>(null)
@@ -25,26 +26,30 @@ const loadError = ref<string | null>(null)
 const channel = computed(() => (batch.value ? channelStore.byId(batch.value.channelId) : undefined))
 const backLink = computed(() => (channel.value ? { name: 'batches', params: { channelSlug: channel.value.slug } } : { name: 'home' }))
 
-const joinLink = computed(() => (batch.value?.joinCode ? `${location.origin}/join#${batch.value.joinCode}` : null))
-
-async function copyJoinLink() {
-  if (!joinLink.value) return
-  await navigator.clipboard.writeText(joinLink.value)
-  toast.add({ severity: 'success', summary: 'Link copied', life: 2000 })
-}
-
 async function openEntry({ data }: { data: EntrySummary }) {
   await router.push({ name: 'entry', params: { entryId: data.id } })
 }
+
+// Keeps the status and entry list live. A failed refresh is ignored: the page still
+// shows the last good state, and the next refresh tries again.
+async function refresh() {
+  if (document.hidden) return
+  batch.value = await api.getBatch(props.batchId).catch(() => batch.value)
+}
+
+let refreshTimer: ReturnType<typeof setInterval> | undefined
 
 onMounted(async () => {
   try {
     const [loaded] = await Promise.all([api.getBatch(props.batchId), channelStore.load()])
     batch.value = loaded
+    refreshTimer = setInterval(refresh, REFRESH_INTERVAL_MS)
   } catch (error) {
     loadError.value = error instanceof Error ? error.message : String(error)
   }
 })
+
+onBeforeUnmount(() => clearInterval(refreshTimer))
 </script>
 
 <template>
@@ -69,29 +74,10 @@ onMounted(async () => {
         </template>
       </Toolbar>
 
-      <section class="intake card">
-        <p>
-          <strong>{{ intakeLabel(batch) }}</strong>
-          <span class="muted">· {{ describeSubmissions(batch) }} · closes {{ formatDate(batch.closesAt) }}</span>
-        </p>
-        <div
-          v-if="joinLink"
-          class="join-link"
-        >
-          <code>{{ joinLink }}</code>
-          <Button
-            icon="pi pi-copy"
-            label="Copy link"
-            size="small"
-            severity="secondary"
-            @click="copyJoinLink"
-          />
-          <a
-            :href="joinLink"
-            target="_blank"
-          >Open join page</a>
-        </div>
-      </section>
+      <BatchIntakePanel
+        :batch="batch"
+        @changed="updated => batch = updated"
+      />
 
       <DataTable
         :value="batch.entries"
@@ -147,28 +133,6 @@ onMounted(async () => {
 
 .page-header {
   margin-bottom: 1.5rem;
-}
-
-.intake {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.intake p {
-  display: flex;
-  gap: 0.4rem;
-  margin: 0;
-}
-
-.join-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
 .entries :deep(tr) {

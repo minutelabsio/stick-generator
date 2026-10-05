@@ -7,6 +7,7 @@ import type {
   ChannelSummary,
   CreateBatchRequest,
   CreateChannelRequest,
+  UpdateBatchRequest,
   EntryDetail,
   JoinBatch,
   Library,
@@ -40,6 +41,9 @@ export const api = {
   getBatch: (batchId: string) => request<BatchDetail>(`/api/batches/${batchId}`),
   createBatch: (channelId: string, batch: CreateBatchRequest) =>
     request<{ id: string }>(`/api/channels/${channelId}/batches`, sendJson('POST', batch)),
+  updateBatch: (batchId: string, changes: UpdateBatchRequest) =>
+    request<BatchDetail>(`/api/batches/${batchId}`, sendJson('PATCH', changes)),
+  rotateBatchCode: (batchId: string) => request<BatchDetail>(`/api/batches/${batchId}/rotate-code`, { method: 'POST' }),
   getEntry: (entryId: string) => request<EntryDetail>(`/api/entries/${entryId}`),
   updateEntry: (entryId: string, changes: UpdateEntryRequest) =>
     request<EntryDetail>(`/api/entries/${entryId}`, sendJson('PATCH', changes)),
