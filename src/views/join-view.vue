@@ -176,9 +176,9 @@ onMounted(async () => {
         <p>Sorry, submissions are no longer open.{{ contactLine }}</p>
       </template>
 
-      <template v-else-if="batch?.state === 'not_yet_open'">
-        <h1>Not open yet</h1>
-        <p>This batch hasn't opened. Try your link again later.</p>
+      <template v-else-if="batch?.state === 'full'">
+        <h1>This batch is full</h1>
+        <p>Sorry, it already has all the entries it can take.{{ contactLine }}</p>
       </template>
 
       <form

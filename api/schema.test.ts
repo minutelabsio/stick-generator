@@ -29,7 +29,7 @@ describe('schema constraints', () => {
     await expect(insert.run()).rejects.toThrow(/CHECK constraint failed/)
   })
 
-  it('rejects an open batch without a submission window', async () => {
+  it('rejects a batch with a join link but no close date', async () => {
     await insertChannel()
     const insert = env.DB
       .prepare('INSERT INTO groups (id, channel_id, slug, name, source, join_code) VALUES (?, ?, ?, ?, ?, ?)')
@@ -77,6 +77,15 @@ describe('schema constraints', () => {
     const insert = env.DB
       .prepare('INSERT INTO channels (id, slug, name, rig, intake) VALUES (?, ?, ?, ?, ?)')
       .bind('channel-c', 'channel-c', 'Channel C', '{}', '[]')
+
+    await expect(insert.run()).rejects.toThrow(/CHECK constraint failed/)
+  })
+
+  it('rejects a batch switched on without a join link', async () => {
+    await insertChannel()
+    const insert = env.DB
+      .prepare('INSERT INTO groups (id, channel_id, slug, name, source, is_open) VALUES (?, ?, ?, ?, ?, 1)')
+      .bind('group-4', TEST_CHANNEL_ID, 'group-4', 'Group 4', 'manual')
 
     await expect(insert.run()).rejects.toThrow(/CHECK constraint failed/)
   })

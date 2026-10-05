@@ -19,11 +19,12 @@ INSERT INTO palettes (channel_id, id, colors) VALUES
   ('00000000-0000-4000-8000-0000000000c2', 'glasses', '["#2B2B2B","#5C5C5C","#8A7563","#F4F1EC"]')
 ON CONFLICT (channel_id, id) DO UPDATE SET colors = excluded.colors;
 
-INSERT INTO groups (id, channel_id, slug, name, source, join_code, opens_at, closes_at, max_submissions) VALUES
+-- Switched on so the join links work straight away. Real batches start switched off.
+INSERT INTO groups (id, channel_id, slug, name, source, join_code, is_open, closes_at, max_submissions) VALUES
   ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000c1', 'demo-batch', 'Demo batch', 'intake',
-   'DEMX-TEST-KEYS', '2026-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z', 50),
+   'DEMX-TEST-KEYS', 1, '2030-01-01T00:00:00.000Z', 50),
   ('00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-0000000000c2', 'sketchbook-demo', 'Sketchbook demo', 'intake',
-   'SKCH-TEST-KEYS', '2026-01-01T00:00:00.000Z', '2030-01-01T00:00:00.000Z', 20)
+   'SKCH-TEST-KEYS', 1, '2030-01-01T00:00:00.000Z', NULL)
 ON CONFLICT (id) DO NOTHING;
 
 -- Answers sit beside a copy of the question as asked. Alan answered a "Favourite snack"

@@ -28,7 +28,7 @@ beforeAll(async () => {
 
 const createBatch = (channelId: string, name: string) => send(`/channels/${channelId}/batches`, {
   method: 'POST',
-  body: JSON.stringify({ name, closesAt: '2030-01-01T00:00:00.000Z', questionLabels: [] }),
+  body: JSON.stringify({ name, closesAt: '2030-01-01T00:00:00.000Z', maxSubmissions: null }),
 })
 
 const listBatchNames = async (channelId: string) => {

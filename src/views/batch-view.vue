@@ -10,7 +10,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import type { BatchDetail, EntrySummary } from '@shared/api-types'
 import StatusMark from '@/components/status-mark.vue'
 import { api } from '@/lib/api'
-import { formatDate, isBatchOpen } from '@/lib/status'
+import { describeSubmissions, formatDate, intakeLabel } from '@/lib/status'
 import { useChannelStore } from '@/stores/channels'
 
 const props = defineProps<{ batchId: string }>()
@@ -71,8 +71,8 @@ onMounted(async () => {
 
       <section class="intake card">
         <p>
-          <strong>{{ isBatchOpen(batch) ? 'Intake open' : 'Intake closed' }}</strong>
-          <span class="muted">{{ isBatchOpen(batch) ? 'until' : 'since' }} {{ formatDate(batch.closesAt) }}</span>
+          <strong>{{ intakeLabel(batch) }}</strong>
+          <span class="muted">· {{ describeSubmissions(batch) }} · closes {{ formatDate(batch.closesAt) }}</span>
         </p>
         <div
           v-if="joinLink"

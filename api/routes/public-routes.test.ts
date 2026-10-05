@@ -10,6 +10,9 @@ const ORIGIN = 'https://stick.example.com'
 const CHANNEL_ID = 'public-routes-channel'
 const OPEN_CODE = 'OPEN-BTCH-2345'
 const CLOSED_CODE = 'CLSD-BTCH-2345'
+const SWITCHED_OFF_CODE = 'OFFF-BTCH-2345'
+const FULL_CODE = 'FULL-BTCH-2345'
+const LAST_PLACES_CODE = 'LAST-PLCS-2345'
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
 const JPEG_BYTES = new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10])
 
@@ -28,11 +31,19 @@ const app = createApp()
 const daysFromNow = (days: number) => new Date(Date.now() + days * MILLISECONDS_PER_DAY).toISOString()
 const jpeg = (name = 'me.jpg') => new File([JPEG_BYTES], name, { type: 'image/jpeg' })
 
-async function insertBatch({ id, joinCode, closesAt }: { id: string, joinCode: string, closesAt: string }) {
+interface TestBatch {
+  id: string
+  joinCode: string
+  closesAt?: string
+  isOpen?: boolean
+  maxSubmissions?: number | null
+}
+
+async function insertBatch({ id, joinCode, closesAt = daysFromNow(7), isOpen = true, maxSubmissions = null }: TestBatch) {
   await env.DB
-    .prepare(`INSERT INTO groups (id, channel_id, slug, name, source, join_code, opens_at, closes_at)
-              VALUES (?, ?, ?, ?, 'intake', ?, ?, ?)`)
-    .bind(id, CHANNEL_ID, id, `Batch ${id}`, joinCode, daysFromNow(-7), closesAt)
+    .prepare(`INSERT INTO groups (id, channel_id, slug, name, source, join_code, is_open, closes_at, max_submissions)
+              VALUES (?, ?, ?, ?, 'intake', ?, ?, ?, ?)`)
+    .bind(id, CHANNEL_ID, id, `Batch ${id}`, joinCode, Number(isOpen), closesAt, maxSubmissions)
     .run()
 }
 
@@ -66,8 +77,14 @@ const entriesFor = async (email: string) => {
 
 beforeAll(async () => {
   await insertChannel(CHANNEL_ID, INTAKE)
-  await insertBatch({ id: 'open-batch', joinCode: OPEN_CODE, closesAt: daysFromNow(7) })
+  await insertBatch({ id: 'open-batch', joinCode: OPEN_CODE })
   await insertBatch({ id: 'closed-batch', joinCode: CLOSED_CODE, closesAt: daysFromNow(-1) })
+  await insertBatch({ id: 'switched-off-batch', joinCode: SWITCHED_OFF_CODE, isOpen: false })
+  await insertBatch({ id: 'full-batch', joinCode: FULL_CODE, maxSubmissions: 1 })
+  await insertBatch({ id: 'last-places-batch', joinCode: LAST_PLACES_CODE, maxSubmissions: 2 })
+  await env.DB
+    .prepare(`INSERT INTO entries (id, group_id, name, submitted_at) VALUES ('already-in', 'full-batch', 'Early', '2026-01-01T00:00:00.000Z')`)
+    .run()
 })
 
 describe('public intake', () => {
@@ -139,10 +156,37 @@ describe('public intake', () => {
     expect(await response.json()).toEqual({ error: 'Pick one of the listed options for “Mug size”.' })
   })
 
-  it('rejects submissions to a closed batch', async () => {
-    const response = await submit(CLOSED_CODE, submissionForm())
+  it.each([
+    ['its close date has passed', CLOSED_CODE],
+    ['the team has switched it off', SWITCHED_OFF_CODE],
+  ])('shows a batch as closed and refuses submissions when %s', async (_label, joinCode) => {
+    const batch = await (await getBatch(joinCode)).json<JoinBatch>()
+    const response = await submit(joinCode, submissionForm())
 
+    expect(batch.state).toBe('closed')
     expect(response.status).toBe(403)
+  })
+
+  it('shows a batch at its limit as full and refuses more', async () => {
+    const batch = await (await getBatch(FULL_CODE)).json<JoinBatch>()
+    const response = await submit(FULL_CODE, submissionForm({ email: 'too-late@example.com' }))
+
+    expect(batch).toMatchObject({ state: 'full', batchName: 'Batch full-batch', contactEmail: 'team@example.com' })
+    expect(response.status).toBe(409)
+    expect(await entriesFor('too-late@example.com')).toEqual([])
+  })
+
+  // D1 can't lock, so only a single conditional insert keeps the limit exact.
+  it('holds the limit when several people submit at the same moment', async () => {
+    const responses = await Promise.all(Array.from({ length: 6 }, async (_, index) =>
+      submit(LAST_PLACES_CODE, submissionForm({ email: `rush-${index}@example.com` }))))
+    const stored = await env.DB
+      .prepare(`SELECT count(*) AS count FROM entries WHERE group_id = 'last-places-batch'`)
+      .first<{ count: number }>()
+
+    expect(responses.filter(response => response.status === 201)).toHaveLength(2)
+    expect(responses.filter(response => response.status === 409)).toHaveLength(4)
+    expect(stored?.count).toBe(2)
   })
 
   it('rejects a photo that is not really an image', async () => {

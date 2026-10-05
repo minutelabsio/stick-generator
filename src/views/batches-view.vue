@@ -15,7 +15,7 @@ import type { BatchSummary } from '@shared/api-types'
 import ChannelSwitcher from '@/components/channel-switcher.vue'
 import { api } from '@/lib/api'
 import { rememberChannelId } from '@/lib/last-channel'
-import { describeCounts, formatDate, isBatchOpen, progressSegments, totalEntries } from '@/lib/status'
+import { describeCounts, formatDate, intakeLabel, progressSegments, totalEntries } from '@/lib/status'
 import { useChannelStore } from '@/stores/channels'
 
 const DEFAULT_WINDOW_DAYS = 14
@@ -63,6 +63,7 @@ async function createBatch() {
     const { id } = await api.createBatch(channel.value.id, {
       name: newBatch.value.name,
       closesAt: newBatch.value.closesAt.toISOString(),
+      maxSubmissions: null,
     })
     isCreating.value = false
     newBatch.value = emptyNewBatch()
@@ -159,7 +160,7 @@ watch(() => props.channelSlug, loadBatches, { immediate: true })
       </Column>
       <Column header="Intake">
         <template #body="{ data }">
-          <span :class="{ muted: !isBatchOpen(data) }">{{ isBatchOpen(data) ? 'Open' : 'Closed' }}</span>
+          <span :class="{ muted: data.intakeState !== 'open' }">{{ intakeLabel(data) }}</span>
         </template>
       </Column>
       <Column header="Closes">

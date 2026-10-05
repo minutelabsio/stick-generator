@@ -1,5 +1,6 @@
 import { ENTRY_STATUSES } from '@shared/api-types'
-import type { EntryStatus } from '@shared/api-types'
+import type { BatchSummary, EntryStatus } from '@shared/api-types'
+import type { IntakeState } from '@shared/batch-intake'
 
 export const STATUS_LABELS: Record<EntryStatus, string> = {
   new: 'New',
@@ -36,10 +37,16 @@ export function describeCounts(counts: Record<EntryStatus, number>) {
   return parts.join(', ')
 }
 
-export function isBatchOpen(batch: { joinCode: string | null, opensAt: string | null, closesAt: string | null }) {
-  if (!batch.joinCode || !batch.opensAt || !batch.closesAt) return false
-  const now = Date.now()
-  return Date.parse(batch.opensAt) <= now && now < Date.parse(batch.closesAt)
+export const INTAKE_STATE_LABELS: Record<IntakeState, string> = {
+  open: 'Open',
+  closed: 'Closed',
+  full: 'Full',
 }
+
+export const intakeLabel = (batch: Pick<BatchSummary, 'intakeState'>) => INTAKE_STATE_LABELS[batch.intakeState]
+
+// e.g. "41 / 60 submitted" or "12 submitted" when there is no limit.
+export const describeSubmissions = (batch: Pick<BatchSummary, 'submittedCount' | 'maxSubmissions'>) =>
+  batch.maxSubmissions === null ? `${batch.submittedCount} submitted` : `${batch.submittedCount} / ${batch.maxSubmissions} submitted`
 
 export const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—')

@@ -1,5 +1,7 @@
 import { MAX_PHOTO_BYTES } from '../../shared/api-types'
-import type { JoinBatch, JoinBatchState } from '../../shared/api-types'
+import type { JoinBatch } from '../../shared/api-types'
+import { intakeStateOf } from '../../shared/batch-intake'
+import type { IntakeState } from '../../shared/batch-intake'
 import { DEFAULT_CONSENT_TEXT, DEFAULT_THANK_YOU_MESSAGE, IntakeSettings, parseAnswers } from '../../shared/intake'
 import type { ParsedAnswer, StoredAnswer, SubmittedAnswers } from '../../shared/intake'
 import { normalizeJoinCode } from '../../shared/join-code'
@@ -9,8 +11,10 @@ interface IntakeGroupRow {
   id: string
   name: string
   channel_name: string
-  opens_at: string
+  is_open: number
   closes_at: string
+  max_submissions: number | null
+  submitted_count: number
   intake: string
 }
 
@@ -62,7 +66,8 @@ interface CheckedImage {
 
 export function createIntakeService({ db, figureBucket }: IntakeDependencies) {
   const findGroup = (joinCode: string) => db
-    .prepare(`SELECT groups.id, groups.name, channels.name AS channel_name, opens_at, closes_at, channels.intake
+    .prepare(`SELECT groups.id, groups.name, channels.name AS channel_name, is_open, closes_at, max_submissions, channels.intake,
+                     (SELECT count(*) FROM entries WHERE group_id = groups.id AND submitted_at IS NOT NULL) AS submitted_count
               FROM groups JOIN channels ON channels.id = groups.channel_id
               WHERE join_code = ? AND groups.archived_at IS NULL`)
     .bind(normalizeJoinCode(joinCode))
@@ -77,8 +82,9 @@ export function createIntakeService({ db, figureBucket }: IntakeDependencies) {
       if (!group) return CLOSED_BATCH
       const intake = IntakeSettings.parse(JSON.parse(group.intake))
       const contactEmail = intake.contactEmail || null
-      const state = windowState(group, Date.now())
+      const state = stateOf(group)
       if (state === 'closed') return { ...CLOSED_BATCH, contactEmail }
+      if (state === 'full') return { ...CLOSED_BATCH, state, channelName: group.channel_name, batchName: group.name, contactEmail }
       return {
         state,
         channelName: group.channel_name,
@@ -94,9 +100,8 @@ export function createIntakeService({ db, figureBucket }: IntakeDependencies) {
 
     async submit(submission: Submission): Promise<void> {
       const group = await findGroup(submission.joinCode)
-      if (!group || windowState(group, Date.now()) !== 'open') {
-        throw httpError(403, 'This batch is closed. If you missed it, email the team.')
-      }
+      if (!group) throw REFUSALS.closed()
+      requireOpen(stateOf(group))
       const intake = IntakeSettings.parse(JSON.parse(group.intake))
       const parsed = parseAnswers(intake.questions, submission.answers, new Set(submission.images.keys()))
       if (!parsed.success) throw httpError(400, parsed.message)
@@ -109,12 +114,25 @@ export function createIntakeService({ db, figureBucket }: IntakeDependencies) {
       const uploads = [{ key: likenessKey, image: photo }, ...prepared.flatMap(({ upload }) => (upload ? [upload] : []))]
       await Promise.all(uploads.map(({ key, image }) => figureBucket.put(key, image.bytes, { httpMetadata: { contentType: image.contentType } })))
       const answers = prepared.map(({ answer }) => answer)
-      await db
+      // One statement checks the switch, the date, and the limit and inserts, so two
+      // submits at the same moment can't both take the last place. Mirrors intakeStateOf.
+      const inserted = await db
         .prepare(`INSERT INTO entries (id, group_id, name, email, answers, likeness_key, submitted_at, consent_at, consent_text)
-                  VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?)`)
-        .bind(entryId, group.id, submission.name, submission.email.toLowerCase(), JSON.stringify(answers),
-          likenessKey, consentTextOf(intake))
+                  SELECT ?, id, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?
+                  FROM groups
+                  WHERE id = ? AND is_open = 1 AND closes_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    AND (max_submissions IS NULL
+                      OR (SELECT count(*) FROM entries WHERE group_id = groups.id AND submitted_at IS NOT NULL) < max_submissions)`)
+        .bind(entryId, submission.name, submission.email.toLowerCase(), JSON.stringify(answers), likenessKey,
+          consentTextOf(intake), group.id)
         .run()
+      if (inserted.meta.changes) return
+      // It closed or filled up while the files were uploading.
+      await figureBucket.delete(uploads.map(({ key }) => key))
+      const latest = await findGroup(submission.joinCode)
+      if (!latest) throw REFUSALS.closed()
+      requireOpen(stateOf(latest))
+      throw httpError(409, 'This batch just filled up. If you missed it, email the team.')
     },
   }
 }
@@ -137,10 +155,21 @@ async function prepareAnswer(entryId: string, { question, value }: ParsedAnswer,
   return { answer: { question, value: { kind: 'image', key } }, upload: { key, image } }
 }
 
-function windowState(group: IntakeGroupRow, now: number): JoinBatchState {
-  if (now < Date.parse(group.opens_at)) return 'not_yet_open'
-  if (now >= Date.parse(group.closes_at)) return 'closed'
-  return 'open'
+const stateOf = (group: IntakeGroupRow) => intakeStateOf({
+  hasJoinCode: true,
+  isOpen: group.is_open === 1,
+  closesAt: group.closes_at,
+  maxSubmissions: group.max_submissions,
+  submittedCount: group.submitted_count,
+}, Date.now())
+
+const REFUSALS: Record<Exclude<IntakeState, 'open'>, () => Error> = {
+  closed: () => httpError(403, 'This batch is closed. If you missed it, email the team.'),
+  full: () => httpError(409, 'This batch is full. If you missed it, email the team.'),
+}
+
+function requireOpen(state: IntakeState) {
+  if (state !== 'open') throw REFUSALS[state]()
 }
 
 async function checkImage(file: File, subject: string): Promise<CheckedImage> {

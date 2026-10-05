@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { MAX_SUBMISSION_LIMIT } from './batch-intake'
+import type { IntakeState } from './batch-intake'
 import { FigureConfig } from './figure'
 import { cleanText, SubmittedAnswers } from './intake'
 import type { Question } from './intake'
@@ -24,8 +26,12 @@ export interface BatchSummary {
   id: string
   name: string
   joinCode: string | null
-  opensAt: string | null
+  isOpen: boolean
   closesAt: string | null
+  maxSubmissions: number | null
+  submittedCount: number
+  // Worked out on the server, so every viewer agrees on the clock.
+  intakeState: IntakeState
   statusCounts: Record<EntryStatus, number>
 }
 
@@ -80,11 +86,24 @@ export interface Library {
   rig: Rig
 }
 
+const BatchName = z.string().trim().min(1, 'Give the batch a name.').max(100)
+const SubmissionLimit = z.int('The limit must be a whole number.').min(1, 'The limit must be at least 1.').max(MAX_SUBMISSION_LIMIT)
+
 export const CreateBatchRequest = z.object({
-  name: z.string().trim().min(1).max(100),
+  name: BatchName,
   closesAt: z.iso.datetime(),
+  maxSubmissions: SubmissionLimit.nullable().default(null),
 })
 export type CreateBatchRequest = z.infer<typeof CreateBatchRequest>
+
+// Only the fields sent change. A null limit removes it.
+export const UpdateBatchRequest = z.object({
+  name: BatchName.optional(),
+  isOpen: z.boolean().optional(),
+  closesAt: z.iso.datetime().optional(),
+  maxSubmissions: SubmissionLimit.nullable().optional(),
+})
+export type UpdateBatchRequest = z.infer<typeof UpdateBatchRequest>
 
 export const UpdateEntryRequest = z.object({
   figure: FigureConfig.optional(),
@@ -94,7 +113,7 @@ export type UpdateEntryRequest = z.infer<typeof UpdateEntryRequest>
 
 export const JOIN_CODE_HEADER = 'X-Join-Code'
 
-export type JoinBatchState = 'open' | 'not_yet_open' | 'closed'
+export type JoinBatchState = IntakeState
 
 export interface JoinBatch {
   state: JoinBatchState

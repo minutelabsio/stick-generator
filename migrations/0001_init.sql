@@ -25,15 +25,18 @@ CREATE TABLE groups (
   source          TEXT NOT NULL CHECK (source IN ('intake', 'manual', 'v1')),
   -- NULL join_code means intake is disabled (manual-only batch).
   join_code       TEXT UNIQUE,
-  opens_at        TEXT,
+  -- Submissions are taken only while switched on and before closes_at. New batches
+  -- start switched off.
+  is_open         INTEGER NOT NULL DEFAULT 0 CHECK (is_open IN (0, 1)),
   closes_at       TEXT,
+  -- NULL means no limit.
   max_submissions INTEGER CHECK (max_submissions IS NULL OR max_submissions > 0),
   allowlist_on    INTEGER NOT NULL DEFAULT 0 CHECK (allowlist_on IN (0, 1)),
   created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   archived_at     TEXT,
-  -- An open batch must have a window that closes after it opens.
-  CHECK (join_code IS NULL OR (opens_at IS NOT NULL AND closes_at IS NOT NULL)),
-  CHECK (closes_at IS NULL OR opens_at IS NULL OR closes_at > opens_at)
+  -- A batch with a join link must have a close date, so it can never stay open forever.
+  CHECK (join_code IS NULL OR closes_at IS NOT NULL),
+  CHECK (is_open = 0 OR join_code IS NOT NULL)
 );
 CREATE INDEX idx_groups_channel ON groups (channel_id, created_at);
 
