@@ -1,5 +1,6 @@
 import { Rig } from '../../shared/rig'
-import type { ChannelSummary } from '../../shared/api-types'
+import type { ChannelSummary, CreateChannelRequest } from '../../shared/api-types'
+import { httpError } from '../http-errors'
 
 interface ChannelRow {
   id: string
@@ -9,6 +10,10 @@ interface ChannelRow {
 }
 
 export interface Channel extends ChannelSummary {
+  rig: Rig
+}
+
+interface NewChannel extends CreateChannelRequest {
   rig: Rig
 }
 
@@ -26,6 +31,18 @@ export function createChannelService(db: D1Database) {
       if (!row) return null
       // Parsed on every read so a hand-edited rig fails loudly instead of drawing wrongly.
       return { ...toChannelSummary(row), rig: Rig.parse(JSON.parse(row.rig)) }
+    },
+
+    // A taken slug is caught by the insert itself, so two people creating the same
+    // channel at once can't both succeed.
+    async create({ name, slug, rig }: NewChannel): Promise<ChannelSummary> {
+      const id = crypto.randomUUID()
+      const result = await db
+        .prepare('INSERT INTO channels (id, slug, name, rig) VALUES (?, ?, ?, ?) ON CONFLICT (slug) DO NOTHING')
+        .bind(id, slug, name, JSON.stringify(rig))
+        .run()
+      if (!result.meta.changes) throw httpError(409, `Another channel already uses the address "${slug}". Pick a different one.`)
+      return { id, slug, name }
     },
   }
 }

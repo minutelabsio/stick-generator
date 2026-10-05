@@ -19,6 +19,13 @@ export interface ChannelSummary {
   name: string
 }
 
+// The slug is the channel's address in the app (/c/<slug>), so keep it URL-plain.
+export const CreateChannelRequest = z.object({
+  name: z.string().trim().min(1, 'Give the channel a name.').max(100),
+  slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lower-case letters, numbers, and single dashes for the address.').max(60),
+})
+export type CreateChannelRequest = z.infer<typeof CreateChannelRequest>
+
 export interface BatchSummary {
   id: string
   name: string

@@ -1,7 +1,8 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { CreateBatchRequest } from '../../shared/api-types'
+import { CreateBatchRequest, CreateChannelRequest } from '../../shared/api-types'
+import { STICK_RIG } from '../../shared/stick-rig'
 import type { AppEnv } from '../app'
 import { requireFound } from '../http-errors'
 import { createBatchService } from '../services/batch-service'
@@ -18,6 +19,10 @@ const requireChannel = async (c: Context<AppEnv>, channelId: string) =>
 
 export const channelRoutes = new Hono<AppEnv>()
   .get('/', async c => c.json(await createChannelService(c.env.DB).list()))
+  // Every channel draws with the stick rig until rigs can be edited (see the backlog).
+  .post('/', zValidator('json', CreateChannelRequest), async (c) => {
+    return c.json(await createChannelService(c.env.DB).create({ ...c.req.valid('json'), rig: STICK_RIG }), 201)
+  })
   .get('/:channelId/batches', async (c) => {
     const channel = await requireChannel(c, c.req.param('channelId'))
     return c.json(await createBatchService(c.env.DB).list(channel.id))

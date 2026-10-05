@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers'
 import { beforeAll, describe, expect, it } from 'vitest'
-import type { Library } from '../../shared/api-types'
+import type { ChannelSummary, Library } from '../../shared/api-types'
+import { STICK_RIG } from '../../shared/stick-rig'
 import { createTestAccessKeys } from '../../test/access-tokens'
 import { insertAsset, insertChannel } from '../../test/fixtures'
 import { createApp } from '../app'
@@ -72,5 +73,34 @@ describe('channel-scoped library', () => {
     expect(library.assets.map(asset => asset.id)).toEqual(['hair-in-a'])
     expect(library.palettes.hair).toEqual(['#AAAAAA'])
     expect(library.rig.slots.length).toBeGreaterThan(0)
+  })
+})
+
+describe('creating a channel', () => {
+  const createChannel = (body: unknown) => send('/channels', { method: 'POST', body: JSON.stringify(body) })
+
+  it('adds it to the list, drawing with the stick rig and an empty library', async () => {
+    const created = await (await createChannel({ name: 'Fresh', slug: 'fresh' })).json<ChannelSummary>()
+
+    const channels = await (await send('/channels')).json<ChannelSummary[]>()
+    const library = await (await send(`/channels/${created.id}/library`)).json<Library>()
+
+    expect(channels).toContainEqual(created)
+    expect(library.rig).toEqual(STICK_RIG)
+    expect(library.assets).toEqual([])
+  })
+
+  it('refuses an address another channel already uses', async () => {
+    await createChannel({ name: 'Taken', slug: 'taken' })
+
+    const response = await createChannel({ name: 'Also taken', slug: 'taken' })
+
+    expect(response.status).toBe(409)
+  })
+
+  it('refuses an address that would not work in a URL', async () => {
+    const response = await createChannel({ name: 'Spaces', slug: 'has spaces' })
+
+    expect(response.status).toBe(400)
   })
 })
