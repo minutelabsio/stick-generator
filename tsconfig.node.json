@@ -3,7 +3,9 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "lib": ["ES2023"],
+    // Scripts run under plain node, which needs the extension on local imports.
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "eslint.config.ts", "scripts/**/*.ts"]
+  "include": ["vite.config.ts", "vitest.config.ts", "eslint.config.ts", "scripts/**/*.ts", "shared/**/*.ts"]
 }
