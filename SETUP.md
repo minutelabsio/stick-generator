@@ -72,7 +72,7 @@ v1 is already behind a Zero Trust Access application. For each v2 hostname:
 2. Copy the application's **AUD tag** into `ACCESS_AUD` and the team domain
    (`<team>.cloudflareaccess.com`) into `ACCESS_TEAM_DOMAIN` for that environment in
    `wrangler.jsonc`. Neither value is secret.
-3. *(Phase 3, not yet)* Add a **Bypass** policy for exactly `/join` and `/api/public/*`.
+3. *(Phase 1, not yet)* Add a **Bypass** policy for exactly `/join` and `/api/public/*`.
    Nothing else may be bypassed. The Worker verifies the Access JWT on every other
    route, and a test enforces that.
 

@@ -1,7 +1,7 @@
 ---
 status: partial
 created: 2026-09-23
-updated: 2026-10-02
+updated: 2026-10-05
 summary: "Phased build plan for v2, from scaffold to cutover, with exit criteria per phase."
 ---
 
@@ -17,8 +17,8 @@ own D1. It **reads** the existing R2 buckets under a new `v2/` prefix and never 
 to v1 keys.
 
 ```
-P0 Groundwork ─► P0.5 Rig as data ─► P0.6 Channels ─► P1 Assets ─► P2 Editor ─► P3 Batch intake
-                                                          └────── designers can start testing here ──────┘
+P0 Groundwork ─► P0.5 Rig as data ─► P0.6 Channels ─► P1 Batch intake ─► P2 Assets ─► P3 Editor
+                                                                         └─ designers can start testing here ─┘
              ─► P4 Migrate + cutover ─► P5 Workflow polish ─► P6 Hardening & output
 ```
 
@@ -32,14 +32,14 @@ built properly: batches with a join link, the follower join page, and the editor
 with save and download. It deliberately skips or simplifies the following, which
 the phases still need to do:
 
-- **Editor (P2):** no optimistic-concurrency check on save, no undo/redo, no
+- **Editor (P3):** no optimistic-concurrency check on save, no undo/redo, no
   draft autosave. The head is pickable, but only one head is seeded.
 - **FigureConfig:** stored flat (`assets` per slot, `colors` per channel), not the
   nested shape sketched in the architecture doc. The flat shape proved simpler for
   the UI, so update the doc if it sticks.
-- **Assets (P1):** loaded by a dev seed script. There is no Assets screen,
+- **Assets (P2):** loaded by a dev seed script. There is no Assets screen,
   upload, or palette editing yet.
-- **Intake (P3):** no Turnstile, rate limits, submission cap, allowlist,
+- **Intake (P1):** no Turnstile, rate limits, submission cap, allowlist,
   duplicate flagging, code rotation, extend/close, or photo cropping. The join page
   is a route in the team SPA, not a separate lightweight entry.
 - **UI library:** PrimeVue is pinned to 4.5 (MIT). 5.x needs a commercial
@@ -69,7 +69,7 @@ the phases still need to do:
       `vue-tsc --build` across app/worker/test projects, and Vitest in the Workers runtime.
 - [x] GitHub Actions: CI (lint, typecheck, test, build) on every push. The deploy
       workflow (`main` → staging, `v*` → production) is gated on `DEPLOY_ENABLED`.
-- [x] `SETUP.md`, `README.md`, and `CLAUDE.md`. Turnstile setup is deferred to Phase 3.
+- [x] `SETUP.md`, `README.md`, and `CLAUDE.md`. Turnstile setup is deferred to Phase 1.
 - [ ] **Provision staging (needs account access):** create the D1 database and buckets,
       fill in the IDs and Access vars in `wrangler.jsonc`, add the hostname to the Zero
       Trust app, add the deploy secrets, and set `DEPLOY_ENABLED`. See SETUP.md.
@@ -136,64 +136,10 @@ channel's asset.
 
 ---
 
-## Phase 1: Asset library
+## Phase 1: Batch invites and public intake
 
-**Goal:** designers manage every layer asset and palette in the UI, with no filename rules.
-
-Everything in this phase is per channel: assets, palettes, and the import target.
-
-- [x] Slot definitions, render order, and FigureConfig zod. Done in `shared/figure.ts`
-      for the prototype, and turned into the rig in Phase 0.5.
-- [ ] Asset API: list, create, patch (label, sort, archive), `PUT` part upload. Validate
-      PNG, 710×943, has alpha, and a size cap.
-- [ ] **Assets screen**: grid per slot. "New asset" dialog with named drop targets for
-      *line art*, *colour mask*, *back line*, and *back mask*. The slot definition
-      decides which targets appear (`slot.parts` in the rig). Show a live tinted preview before saving.
-      Replace part, archive/restore, and drag to reorder.
-- [ ] Thumbnails: when uploading, crop to the bounding box in the browser once and
-      upload `thumb-r<n>.png`. Pickers never crop at runtime.
-- [ ] Palettes screen: edit the swatch lists for skin, hair, hat, and glasses, then save.
-- [ ] `scripts/import-v1-assets.ts`: walks R2 `assets/<Category>/` and applies the v1
-      naming rules (`mask` prefix, `b` suffix, per-slot prefixes) **once**. It creates
-      asset rows in the original channel and copies objects to `v2/assets/…`. Seeds that
-      channel's palettes from the v1 arrays.
-- [ ] Tests: asset upload validation. The importer's filename parsing, including the
-      `b`-in-name case that v1 gets wrong.
-
-**Exit:** every v1 asset shows in the v2 library with correct masks and back layers. A
-designer can add a new hat with a back layer without being told any naming convention.
-
----
-
-## Phase 2: Editor
-
-**Goal:** feature parity with v1's figure building, fixing v1's known bugs.
-
-- [ ] `src/lib/render.ts`, driven by `LAYERS`. It uses one scratch canvas for tinting.
-- [ ] **Editor layout** that works on a laptop screen:
-      - left: the follower's photo (zoom/pan) and the answers to questions flagged `highlight`
-      - centre: canvas, scaled to fit
-      - right: slot tabs or accordion. Each has an asset picker (thumbnails, "none" option)
-        and a colour row (palette swatches plus a custom picker) where the slot is tintable.
-- [ ] Head picker, since v1 hard-coded the first head.
-- [ ] Defaults: random body and skin. Hair and hat default to the first palette colour
-      when an asset is first picked. Facial hair follows hair colour until set on its own.
-      A **Randomise** button fills every unset slot.
-- [ ] Undo/redo (in-memory history of FigureConfig).
-- [ ] **Save**: render the PNG, `PUT /entries/:id/render`, then `PATCH /entries/:id` with
-      `If-Match: version`. A 409 shows "changed by <who> at <when>, reload or overwrite".
-- [ ] Unsaved-changes guard when switching entries. This replaces v1's silent reset.
-- [ ] Local draft autosave (per entry, browser storage) so a closed tab loses nothing.
-- [ ] Download PNG.
-- [ ] Tests: FigureConfig validation and version conflict (API). One golden-image
-      Playwright test of a fixed config.
-
-**Exit:** a designer reproduces three existing v1 figures in v2, and the PNGs match
-visually.
-
----
-
-## Phase 3: Batch invites and public intake
+Moved ahead of assets and the editor on 2026-10-05, because subscriber intake is needed
+soon. It depends on batches and channels, not on either of them.
 
 **Goal:** each batch of subscribers gets one expiring link. Followers submit their own
 answers and photo through it. Nobody touches a CSV of responses, Drive, or R2 by hand.
@@ -231,6 +177,63 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
 entries show up in the queue. A repeat submit is flagged as a duplicate. After
 "Close now" and after "Rotate code", the old link shows the closed message. A route scan
 confirms that nothing outside `/join` and `/api/public/*` answers without Access.
+
+---
+
+## Phase 2: Asset library
+
+**Goal:** designers manage every layer asset and palette in the UI, with no filename rules.
+
+Everything in this phase is per channel: assets, palettes, and the import target.
+
+- [x] Slot definitions, render order, and FigureConfig zod. Done in `shared/figure.ts`
+      for the prototype, and turned into the rig in Phase 0.5.
+- [ ] Asset API: list, create, patch (label, sort, archive), `PUT` part upload. Validate
+      PNG, 710×943, has alpha, and a size cap.
+- [ ] **Assets screen**: grid per slot. "New asset" dialog with named drop targets for
+      *line art*, *colour mask*, *back line*, and *back mask*. The slot definition
+      decides which targets appear (`slot.parts` in the rig). Show a live tinted preview before saving.
+      Replace part, archive/restore, and drag to reorder.
+- [ ] Thumbnails: when uploading, crop to the bounding box in the browser once and
+      upload `thumb-r<n>.png`. Pickers never crop at runtime.
+- [ ] Palettes screen: edit the swatch lists for skin, hair, hat, and glasses, then save.
+- [ ] `scripts/import-v1-assets.ts`: walks R2 `assets/<Category>/` and applies the v1
+      naming rules (`mask` prefix, `b` suffix, per-slot prefixes) **once**. It creates
+      asset rows in the original channel and copies objects to `v2/assets/…`. Seeds that
+      channel's palettes from the v1 arrays.
+- [ ] Tests: asset upload validation. The importer's filename parsing, including the
+      `b`-in-name case that v1 gets wrong.
+
+**Exit:** every v1 asset shows in the v2 library with correct masks and back layers. A
+designer can add a new hat with a back layer without being told any naming convention.
+
+---
+
+## Phase 3: Editor
+
+**Goal:** feature parity with v1's figure building, fixing v1's known bugs.
+
+- [ ] `src/lib/render.ts`, driven by `LAYERS`. It uses one scratch canvas for tinting.
+- [ ] **Editor layout** that works on a laptop screen:
+      - left: the follower's photo (zoom/pan) and the answers to questions flagged `highlight`
+      - centre: canvas, scaled to fit
+      - right: slot tabs or accordion. Each has an asset picker (thumbnails, "none" option)
+        and a colour row (palette swatches plus a custom picker) where the slot is tintable.
+- [ ] Head picker, since v1 hard-coded the first head.
+- [ ] Defaults: random body and skin. Hair and hat default to the first palette colour
+      when an asset is first picked. Facial hair follows hair colour until set on its own.
+      A **Randomise** button fills every unset slot.
+- [ ] Undo/redo (in-memory history of FigureConfig).
+- [ ] **Save**: render the PNG, `PUT /entries/:id/render`, then `PATCH /entries/:id` with
+      `If-Match: version`. A 409 shows "changed by <who> at <when>, reload or overwrite".
+- [ ] Unsaved-changes guard when switching entries. This replaces v1's silent reset.
+- [ ] Local draft autosave (per entry, browser storage) so a closed tab loses nothing.
+- [ ] Download PNG.
+- [ ] Tests: FigureConfig validation and version conflict (API). One golden-image
+      Playwright test of a fixed config.
+
+**Exit:** a designer reproduces three existing v1 figures in v2, and the PNGs match
+visually.
 
 ---
 
@@ -328,7 +331,7 @@ on its own.
 
 | Risk | Mitigation |
 |------|------------|
-| Rendering drifts between v1 and v2 (layer order, tint behaviour) | Golden-image test. Phase 2 exit compares against v1 renders |
+| Rendering drifts between v1 and v2 (layer order, tint behaviour) | Golden-image test. Phase 3 exit compares against v1 renders |
 | v1 `stickProps` URLs that no longer resolve | The migration dry run lists them. The figure falls back to `null` for that slot and is flagged |
 | The public endpoint gets abused (spam, floods, oversized uploads) | Layered controls in [v2-public-intake.md](./v2-public-intake.md#spam-and-abuse-controls). Nothing can be edited or read through the public API |
 | An Access bypass typo exposes team routes | The app checks the JWT itself on every non-public route. A route enumeration test runs in CI |

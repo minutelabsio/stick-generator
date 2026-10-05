@@ -12,7 +12,7 @@ Followers submit their answers and photo directly into v2 through an invite link
 expires.
 
 Architecture context: [v2-architecture.md](./v2-architecture.md). Build phase:
-[Phase 3](./v2-phased-plan.md#phase-3-batch-invites-and-public-intake).
+[Phase 1](./v2-phased-plan.md#phase-1-batch-invites-and-public-intake).
 
 ## Decisions so far
 

@@ -40,5 +40,5 @@ inspected during the review, so layout details need a check in a browser.
   - The editor then says "Saved by another session at TIME" and offers Reload or Overwrite. No user names, since identity stays with Cloudflare Access.
   - Save the figure before uploading the render, so a rejected save can't leave the losing edit's PNG behind.
 - [ ] **Batch menu** on the batch page: extend, close early, rotate link, edit name and questions.
-- [ ] **Add and edit an entry manually** from the batch page, for photos emailed in. Needs photo upload from the team side (also in Phase 3 of the phased plan).
+- [ ] **Add and edit an entry manually** from the batch page, for photos emailed in. Needs photo upload from the team side (also in Phase 1 of the phased plan).
 - [ ] **Bulk export** from the batch page: a zip of done PNGs and a CSV of names and emails.

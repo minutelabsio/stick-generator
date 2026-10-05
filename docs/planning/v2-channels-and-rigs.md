@@ -156,7 +156,7 @@ later means a table rebuild. Once anything is deployed, use a new numbered migra
 - The batch list moves under `/c/:channelSlug`. Batch and entry pages stay keyed by ID
   and read the channel from their data.
 - New batches are created in the current channel.
-- Phase 1's Assets and Palettes screens are channel-scoped from the start.
+- Phase 2's Assets and Palettes screens are channel-scoped from the start.
 
 ## Later: admin-editable rigs (backlog)
 
