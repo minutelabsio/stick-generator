@@ -42,6 +42,7 @@ const shortcutsPopover = useTemplateRef<InstanceType<typeof Popover>>('shortcuts
 const shortcutsButton = useTemplateRef<ComponentPublicInstance>('shortcutsButton')
 
 const library = ref<Library | null>(null)
+let libraryChannelId: string | null = null
 const entry = ref<EntryDetail | null>(null)
 const batch = ref<BatchDetail | null>(null)
 const figure = ref<FigureConfig | null>(null)
@@ -101,13 +102,24 @@ const chosenAssets = computed(() => {
   return chosen
 })
 
+// Entries are usually opened one after another in the same batch, so the library is
+// fetched again only when the channel changes.
+async function libraryFor(channelId: string) {
+  if (library.value && libraryChannelId === channelId) return library.value
+  const fetched = await api.getLibrary(channelId)
+  libraryChannelId = channelId
+  return fetched
+}
+
 async function loadEntry(entryId: string) {
   try {
     loadError.value = null
-    library.value ??= await api.getLibrary()
-    entry.value = await api.getEntry(entryId)
-    batch.value = await api.getBatch(entry.value.batchId)
-    figure.value = entry.value.figure ?? initialFigure(library.value)
+    const loaded = await api.getEntry(entryId)
+    const currentLibrary = await libraryFor(loaded.channelId)
+    library.value = currentLibrary
+    entry.value = loaded
+    batch.value = await api.getBatch(loaded.batchId)
+    figure.value = loaded.figure ?? initialFigure(currentLibrary)
     needsStartingPoint.value = entry.value.figure === null
     status.value = entry.value.status
     isDirty.value = false

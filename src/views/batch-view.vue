@@ -11,14 +11,19 @@ import type { BatchDetail, EntrySummary } from '@shared/api-types'
 import StatusMark from '@/components/status-mark.vue'
 import { api } from '@/lib/api'
 import { formatDate, isBatchOpen } from '@/lib/status'
+import { useChannelStore } from '@/stores/channels'
 
 const props = defineProps<{ batchId: string }>()
 
 const router = useRouter()
 const toast = useToast()
+const channelStore = useChannelStore()
 
 const batch = ref<BatchDetail | null>(null)
 const loadError = ref<string | null>(null)
+
+const channel = computed(() => (batch.value ? channelStore.byId(batch.value.channelId) : undefined))
+const backLink = computed(() => (channel.value ? { name: 'batches', params: { channelSlug: channel.value.slug } } : { name: 'home' }))
 
 const joinLink = computed(() => (batch.value?.joinCode ? `${location.origin}/join#${batch.value.joinCode}` : null))
 
@@ -34,7 +39,8 @@ async function openEntry({ data }: { data: EntrySummary }) {
 
 onMounted(async () => {
   try {
-    batch.value = await api.getBatch(props.batchId)
+    const [loaded] = await Promise.all([api.getBatch(props.batchId), channelStore.load()])
+    batch.value = loaded
   } catch (error) {
     loadError.value = error instanceof Error ? error.message : String(error)
   }
@@ -52,10 +58,10 @@ onMounted(async () => {
 
     <template v-if="batch">
       <RouterLink
-        :to="{ name: 'batches' }"
+        :to="backLink"
         class="back"
       >
-        <i class="pi pi-angle-left" /> Batches
+        <i class="pi pi-angle-left" /> {{ channel ? `${channel.name} batches` : 'Batches' }}
       </RouterLink>
       <Toolbar class="page-header">
         <template #start>

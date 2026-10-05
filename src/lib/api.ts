@@ -3,6 +3,7 @@ import { JOIN_CODE_HEADER } from '@shared/api-types'
 import type {
   BatchDetail,
   BatchSummary,
+  ChannelSummary,
   CreateBatchRequest,
   EntryDetail,
   JoinBatch,
@@ -31,15 +32,17 @@ const sendJson = (method: string, payload: unknown): RequestInit => ({
 })
 
 export const api = {
-  listBatches: () => request<BatchSummary[]>('/api/batches'),
+  listChannels: () => request<ChannelSummary[]>('/api/channels'),
+  listBatches: (channelId: string) => request<BatchSummary[]>(`/api/channels/${channelId}/batches`),
   getBatch: (batchId: string) => request<BatchDetail>(`/api/batches/${batchId}`),
-  createBatch: (batch: CreateBatchRequest) => request<{ id: string }>('/api/batches', sendJson('POST', batch)),
+  createBatch: (channelId: string, batch: CreateBatchRequest) =>
+    request<{ id: string }>(`/api/channels/${channelId}/batches`, sendJson('POST', batch)),
   getEntry: (entryId: string) => request<EntryDetail>(`/api/entries/${entryId}`),
   updateEntry: (entryId: string, changes: UpdateEntryRequest) =>
     request<EntryDetail>(`/api/entries/${entryId}`, sendJson('PATCH', changes)),
   uploadRender: (entryId: string, png: Blob) =>
     request<EntryDetail>(`/api/entries/${entryId}/render`, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: png }),
-  getLibrary: () => request<Library>('/api/library'),
+  getLibrary: (channelId: string) => request<Library>(`/api/channels/${channelId}/library`),
   getJoinBatch: (joinCode: string) => request<JoinBatch>('/api/public/batch', { headers: { [JOIN_CODE_HEADER]: joinCode } }),
   submitJoin: (joinCode: string, form: FormData) =>
     request<{ ok: true }>('/api/public/submission', { method: 'POST', headers: { [JOIN_CODE_HEADER]: joinCode }, body: form }),

@@ -10,22 +10,30 @@ import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
 import Toolbar from 'primevue/toolbar'
 import { useToast } from 'primevue/usetoast'
-import { onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import type { BatchSummary } from '@shared/api-types'
+import ChannelSwitcher from '@/components/channel-switcher.vue'
 import { api } from '@/lib/api'
+import { rememberChannelId } from '@/lib/last-channel'
 import { describeCounts, formatDate, isBatchOpen, progressSegments, totalEntries } from '@/lib/status'
+import { useChannelStore } from '@/stores/channels'
 
 const DEFAULT_WINDOW_DAYS = 14
 const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
 
+const props = defineProps<{ channelSlug: string }>()
+
 const router = useRouter()
 const toast = useToast()
+const channelStore = useChannelStore()
 
 const batches = ref<BatchSummary[]>([])
 const loadError = ref<string | null>(null)
 const isCreating = ref(false)
 const newBatch = ref(emptyNewBatch())
+
+const channel = computed(() => channelStore.bySlug(props.channelSlug))
 
 function emptyNewBatch() {
   return {
@@ -36,16 +44,25 @@ function emptyNewBatch() {
 }
 
 async function loadBatches() {
+  batches.value = []
+  loadError.value = null
   try {
-    batches.value = await api.listBatches()
+    await channelStore.load()
+    if (!channel.value) {
+      loadError.value = `There is no channel called "${props.channelSlug}". Pick one from the channel menu.`
+      return
+    }
+    rememberChannelId(channel.value.id)
+    batches.value = await api.listBatches(channel.value.id)
   } catch (error) {
     loadError.value = error instanceof Error ? error.message : String(error)
   }
 }
 
 async function createBatch() {
+  if (!channel.value) return
   try {
-    const { id } = await api.createBatch({
+    const { id } = await api.createBatch(channel.value.id, {
       name: newBatch.value.name,
       closesAt: newBatch.value.closesAt.toISOString(),
       questionLabels: newBatch.value.questions.split('\n').map(line => line.trim()).filter(Boolean),
@@ -60,19 +77,24 @@ async function createBatch() {
 
 const openBatch = ({ data }: { data: BatchSummary }) => router.push({ name: 'batch', params: { batchId: data.id } })
 
-onMounted(loadBatches)
+// Switching channels reuses this view, so reload whenever the channel changes.
+watch(() => props.channelSlug, loadBatches, { immediate: true })
 </script>
 
 <template>
   <main class="page">
     <Toolbar class="page-header">
       <template #start>
-        <h1>Batches</h1>
+        <div class="title">
+          <ChannelSwitcher :channel-slug="channelSlug" />
+          <h1>Batches</h1>
+        </div>
       </template>
       <template #end>
         <Button
           label="New batch"
           icon="pi pi-plus"
+          :disabled="!channel"
           @click="isCreating = true"
         />
       </template>
@@ -139,7 +161,7 @@ onMounted(loadBatches)
     <Dialog
       v-model:visible="isCreating"
       modal
-      header="New batch"
+      :header="`New batch in ${channel?.name}`"
       :style="{ width: '32rem' }"
     >
       <form
@@ -181,6 +203,12 @@ onMounted(loadBatches)
 <style scoped>
 .page-header {
   margin-bottom: 1.5rem;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .ledger :deep(tr) {
