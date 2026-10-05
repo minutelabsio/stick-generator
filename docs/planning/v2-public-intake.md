@@ -292,6 +292,7 @@ Team (Access):
 | `GET` · `PUT /api/channels/:id/intake` | The channel's instructions, questions, thank-you message, consent text, and contact email |
 | `PATCH /api/batches/:id` | Batch settings: name, open switch, close date, limit (and later the allowlist toggle) |
 | `POST /api/batches/:id/rotate-code` | New code. The old one is invalid immediately |
+| `GET /api/batches/:id/export.csv` | Every entry's responses: a column per question ever asked (current form first, matched by id), image file names as storage paths below `v2/`, and cells starting with `= + - @` prefixed with `'` so they can't run as formulas |
 | `PUT /api/batches/:id/allowlist` · `GET …/allowlist?status=pending` | Replace the list. See who hasn't submitted |
 
 ## Team UI

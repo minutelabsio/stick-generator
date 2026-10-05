@@ -195,6 +195,8 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
       Closed, full, and error states all name the contact email. Shows the channel's
       instructions above the form and its thank-you message after submitting.
 - [ ] Manual entry with photo upload from the team side, for late subscribers who email in.
+- [x] CSV export of a batch's responses (`GET /batches/:id/export.csv`): a column per
+      question ever asked, image file names as storage paths, and formula-safe cells.
 - [ ] Tests: those listed in [v2-public-intake.md](./v2-public-intake.md#tests-critical-paths-only).
 
 **Exit:** a staging batch is opened and three testers submit from their phones, and the
