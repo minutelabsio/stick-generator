@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestAccessKeys } from '../../test/access-tokens'
+import { insertChannel, TEST_CHANNEL_ID } from '../../test/fixtures'
 import { createApp } from '../app'
 
 const ORIGIN = 'https://stick.example.com'
@@ -18,8 +19,10 @@ beforeAll(async () => {
     body: JSON.stringify({ figure }),
   }, env)
 
+  await insertChannel()
   await env.DB.batch([
-    env.DB.prepare(`INSERT INTO groups (id, slug, name, source) VALUES ('entry-routes-batch', 'entry-routes-batch', 'Batch', 'manual')`),
+    env.DB.prepare(`INSERT INTO groups (id, channel_id, slug, name, source) VALUES ('entry-routes-batch', ?, 'entry-routes-batch', 'Batch', 'manual')`)
+      .bind(TEST_CHANNEL_ID),
     env.DB.prepare(`INSERT INTO entries (id, group_id, name) VALUES (?, 'entry-routes-batch', 'Ada')`).bind(ENTRY_ID),
   ])
 })

@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { insertChannel, TEST_CHANNEL_ID } from '../../test/fixtures'
 import { createApp } from '../app'
 
 const ORIGIN = 'https://stick.example.com'
@@ -14,9 +15,9 @@ const daysFromNow = (days: number) => new Date(Date.now() + days * MILLISECONDS_
 
 async function insertBatch({ id, joinCode, closesAt }: { id: string, joinCode: string, closesAt: string }) {
   await env.DB
-    .prepare(`INSERT INTO groups (id, slug, name, source, questions, join_code, opens_at, closes_at)
-              VALUES (?, ?, ?, 'intake', ?, ?, ?, ?)`)
-    .bind(id, id, `Batch ${id}`, '[{"id":"q1","label":"Hair?","required":false,"highlight":true}]', joinCode, daysFromNow(-7), closesAt)
+    .prepare(`INSERT INTO groups (id, channel_id, slug, name, source, questions, join_code, opens_at, closes_at)
+              VALUES (?, ?, ?, ?, 'intake', ?, ?, ?, ?)`)
+    .bind(id, TEST_CHANNEL_ID, id, `Batch ${id}`, '[{"id":"q1","label":"Hair?","required":false,"highlight":true}]', joinCode, daysFromNow(-7), closesAt)
     .run()
 }
 
@@ -41,6 +42,7 @@ const getBatch = (joinCode: string) =>
   app.request(`${ORIGIN}/api/public/batch`, { headers: { 'X-Join-Code': joinCode } }, env)
 
 beforeAll(async () => {
+  await insertChannel()
   await insertBatch({ id: 'open-batch', joinCode: OPEN_CODE, closesAt: daysFromNow(7) })
   await insertBatch({ id: 'closed-batch', joinCode: CLOSED_CODE, closesAt: daysFromNow(-1) })
 })

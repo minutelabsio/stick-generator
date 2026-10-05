@@ -1,9 +1,22 @@
 -- v2 initial schema. See docs/planning/v2-architecture.md and v2-public-intake.md.
 -- Timestamps are ISO 8601 text (UTC). JSON columns are validated with json_valid().
 
+-- A channel owns its batches, assets, and palettes, and draws its figures with its own
+-- rig (shared/rig.ts), stored whole as JSON because it is small and always read whole.
+CREATE TABLE channels (
+  id           TEXT PRIMARY KEY,
+  slug         TEXT NOT NULL UNIQUE,
+  name         TEXT NOT NULL,
+  rig          TEXT NOT NULL CHECK (json_valid(rig)),
+  rig_revision INTEGER NOT NULL DEFAULT 1 CHECK (rig_revision >= 1),
+  created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  archived_at  TEXT
+);
+
 -- A group is one batch of followers.
 CREATE TABLE groups (
   id              TEXT PRIMARY KEY,
+  channel_id      TEXT NOT NULL REFERENCES channels(id),
   slug            TEXT NOT NULL UNIQUE,
   name            TEXT NOT NULL,
   source          TEXT NOT NULL CHECK (source IN ('intake', 'manual', 'v1')),
@@ -22,6 +35,7 @@ CREATE TABLE groups (
   CHECK (join_code IS NULL OR (opens_at IS NOT NULL AND closes_at IS NOT NULL)),
   CHECK (closes_at IS NULL OR opens_at IS NULL OR closes_at > opens_at)
 );
+CREATE INDEX idx_groups_channel ON groups (channel_id, created_at);
 
 CREATE TABLE entries (
   id              TEXT PRIMARY KEY,
@@ -58,11 +72,12 @@ CREATE TABLE batch_allowlist (
   PRIMARY KEY (group_id, email)
 );
 
+-- Which slots exist is per-channel data in the rig, which a CHECK cannot read, so the
+-- services check slots against the rig instead.
 CREATE TABLE assets (
   id          TEXT PRIMARY KEY,
-  slot        TEXT NOT NULL CHECK (slot IN (
-                'body', 'head', 'hair', 'hat', 'mustache', 'beard', 'longbeard', 'glasses', 'accessory'
-              )),
+  channel_id  TEXT NOT NULL REFERENCES channels(id),
+  slot        TEXT NOT NULL,
   label       TEXT NOT NULL,
   -- { line, mask?, backLine?, backMask? } → R2 keys
   parts       TEXT NOT NULL CHECK (json_valid(parts) AND json_extract(parts, '$.line') IS NOT NULL),
@@ -74,9 +89,12 @@ CREATE TABLE assets (
   updated_by  TEXT,
   updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
-CREATE INDEX idx_assets_slot ON assets (slot, sort);
+CREATE INDEX idx_assets_channel_slot ON assets (channel_id, slot, sort);
 
+-- Palette ids come from the channel's rig, so two channels can each have a "hair" palette.
 CREATE TABLE palettes (
-  id     TEXT PRIMARY KEY CHECK (id IN ('skin', 'hair', 'hat', 'glasses')),
-  colors TEXT NOT NULL CHECK (json_valid(colors) AND json_type(colors) = 'array')
+  channel_id TEXT NOT NULL REFERENCES channels(id),
+  id         TEXT NOT NULL,
+  colors     TEXT NOT NULL CHECK (json_valid(colors) AND json_type(colors) = 'array'),
+  PRIMARY KEY (channel_id, id)
 );
