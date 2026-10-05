@@ -11,7 +11,11 @@ export async function preparePhoto(file: File): Promise<Blob> {
   })
   const scale = Math.min(1, MAX_PHOTO_EDGE_PX / Math.max(bitmap.width, bitmap.height))
   const canvas = createCanvas(Math.round(bitmap.width * scale), Math.round(bitmap.height * scale))
-  get2dContext(canvas).drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  const context = get2dContext(canvas)
+  // JPEG has no transparency, and transparent pixels would otherwise turn black.
+  context.fillStyle = '#FFFFFF'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
   return new Promise((resolve, reject) => {
     canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Could not prepare the photo.'))), 'image/jpeg', JPEG_QUALITY)
