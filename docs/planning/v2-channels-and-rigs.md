@@ -1,7 +1,7 @@
 ---
-status: partial
+status: implemented
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-05
 summary: "Figure rig as data, then channels that each own their batches, assets, palettes, and rig."
 ---
 
@@ -102,8 +102,8 @@ be added as an optional field later if a style needs it.
 - `FigureConfig` keys become plain strings (`z.record(z.string(), …)`) instead of
   `z.enum(SLOT_IDS)`. Stored figure JSON does not change.
 - The entry service validates a figure on write against the entry's rig: every slot
-  and colour role must exist in it. Once channels exist, every asset must also belong
-  to the entry's channel, checked in one query.
+  and colour role must exist in it. Every asset must also belong to the entry's
+  channel and be made for the slot it fills, checked in one query.
 - The library response carries the rig, so the SPA draws with whatever the server
   says. Until channels exist, the server always returns `STICK_RIG`.
 - Palettes in the library response are keyed by the rig's palette ids. Each one is

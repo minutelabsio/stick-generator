@@ -116,23 +116,30 @@ draw order, and structure.
 admins switch between channels. No access control: every admin sees every channel.
 Design: [v2-channels-and-rigs.md](./v2-channels-and-rigs.md#channels).
 
-- [ ] Schema: `channels` table (with `rig` JSON and `rig_revision`), `channel_id` on
+- [x] Schema: `channels` table (with `rig` JSON and `rig_revision`), `channel_id` on
       `groups`, `assets`, and `palettes`, palettes keyed by `(channel_id, id)`. Drop
       the fixed slot and palette CHECKs. Fold into `0001` if nothing is deployed yet,
       otherwise add a migration.
-- [ ] Seed two channels in dev, each with its own palettes and assets.
-- [ ] API: `GET /channels`, channel-scoped batch list and create, channel-scoped
+- [x] Seed two channels in dev, each with its own palettes and assets.
+- [x] API: `GET /channels`, channel-scoped batch list and create, channel-scoped
       library (assets, palettes, rig), and `channelId` on entry detail.
-- [ ] `PATCH /entries/:id` rejects assets from another channel, checked in one query.
-- [ ] SPA: channel switcher (remembers the last channel), batch list under
+- [x] `PATCH /entries/:id` rejects assets from another channel, checked in one query.
+- [x] SPA: channel switcher (remembers the last channel), batch list under
       `/c/:channelSlug`, new batches created in the current channel.
-- [ ] Join page shows the channel's name.
-- [ ] Tests: batch lists don't leak across channels, a figure that mixes channels is
+- [x] Join page shows the channel's name.
+- [x] Tests: batch lists don't leak across channels, a figure that mixes channels is
       rejected, and two channels can each have a `hair` palette.
 
 **Exit:** with two seeded channels, a designer switches channels and sees only that
 channel's batches and assets. An entry in one channel cannot be saved with another
 channel's asset.
+
+Done 2026-10-05 on the `feature-channels` branch. Met: in dev, switching between
+*Original* and *Sketchbook* changes the batch list, swatches, and assets, and tests
+cover the leak, mixed-figure, and shared-palette-id cases. Saving also refuses an
+asset used in a slot it wasn't made for, since the same query checks that for free.
+Not covered: there is no way yet to create a channel outside the dev seed, so
+staging and production need their first channel added by hand once provisioned.
 
 ---
 

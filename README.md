@@ -27,7 +27,9 @@ See [SETUP.md](./SETUP.md) for prerequisites, environments, and provisioning.
 
 1. `pnpm run dev:init` once (about 30 s: it loads the v1 layer PNGs into local R2),
    then `pnpm run dev`.
-2. **Batches** (`/`): open *Demo batch*, or create one with **New batch**.
+2. **Batches** (`/`): opens the channel you last used. Switch between the seeded
+   *Original* and *Sketchbook* channels with the menu next to the title. Each has its
+   own demo batch, palettes, and assets. Open a batch, or create one with **New batch**.
 3. **Batch page**: copy the join link and open it, ideally in a narrow window, to
    submit as a follower. Submissions show up in the table.
 4. Click an entry to open the **editor**: pick parts and colours, or **Randomise**,
@@ -36,7 +38,7 @@ See [SETUP.md](./SETUP.md) for prerequisites, environments, and provisioning.
 To start over, delete `.wrangler/state` and run `pnpm run dev:init` again.
 
 **More layer art:** put PNGs (710×943, transparent) under `seed/stick-assets/`, add
-them to `SEED_ASSETS` in `scripts/seed-dev-assets.ts`, and run
+them to `ORIGINAL_ASSETS` in `scripts/seed-dev-assets.ts`, and run
 `pnpm run db:seed:assets`.
 
 ## Commands

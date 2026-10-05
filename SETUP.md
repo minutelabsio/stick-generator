@@ -11,7 +11,7 @@
 
 ```sh
 pnpm install
-pnpm run dev:init     # apply migrations to the local D1 and load scripts/seed-dev.sql
+pnpm run dev:init     # apply migrations to the local D1 and seed two demo channels
 pnpm run dev
 ```
 
