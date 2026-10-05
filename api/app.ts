@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
+import { secureHeaders } from 'hono/secure-headers'
 import type { MeResponse } from '../shared/api-schemas'
 import { logger } from './logger'
 import { createAccessAuth, createRemoteAccessKeys } from './middleware/access-auth'
@@ -25,6 +26,8 @@ export function createApp({ resolveAccessKeys = createRemoteAccessKeys() }: AppO
   const app = new Hono<AppEnv>().basePath('/api')
 
   app.onError(handleError)
+  // nosniff, no framing, and no referrer on every API response, public ones included.
+  app.use('*', secureHeaders())
 
   app.get('/health', c => c.json({ ok: true }))
   app.route('/public', publicRoutes)

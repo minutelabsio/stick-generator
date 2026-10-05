@@ -1,0 +1,10 @@
+# Applied by Workers static assets to every page and file it serves, including the
+# SPA fallback for /join. API responses come from the Worker and set their own headers.
+# Styles need 'unsafe-inline' because PrimeVue injects its theme as <style> tags.
+# Turnstile (Phase 1) will add https://challenges.cloudflare.com to script-src and frame-src.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

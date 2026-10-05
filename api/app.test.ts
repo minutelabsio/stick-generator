@@ -20,6 +20,13 @@ describe('GET /api/health', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ ok: true })
   })
+
+  it('carries the security headers every API response gets', async () => {
+    const response = await createApp().request(`${DEPLOYED_ORIGIN}/api/health`, {}, env)
+
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff')
+    expect(response.headers.get('Referrer-Policy')).toBe('no-referrer')
+  })
 })
 
 describe('route guard', () => {
