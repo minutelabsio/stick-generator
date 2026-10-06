@@ -88,7 +88,7 @@ staging or v1 token through on production.
 
 ## Enabling deploys
 
-`.github/workflows/deploy.yml` deploys `main` to staging and `v*` tags to production,
+`.github/workflows/deploy.yml` deploys `refresh` to staging and `v*` tags to production,
 but only when the repo variable `DEPLOY_ENABLED` is `true`. Before turning it on:
 
 1. Finish provisioning (above) for the target environment.

@@ -1,16 +1,19 @@
 name: Deploy
 
-# Staging:    every push to main          → migrate + deploy --env staging
+# Staging:    every push to refresh       → migrate + deploy --env staging
 # Production: every pushed tag matching v* → migrate + deploy --env production
 #
 # Disabled until setup is finished (see SETUP.md, "Enabling deploys"):
 #   - repo variable DEPLOY_ENABLED = true
 #   - repo secrets CLOUDFLARE_API_TOKEN (Workers Scripts, D1, R2: Edit) and CLOUDFLARE_ACCOUNT_ID
 #   - real D1 database IDs and Access vars in wrangler.jsonc for the target environment
+#
+# Staging deploys from refresh, the v2 trunk, because main is still v1 until cutover.
+# Switch it back to main as part of cutover (Phase 4).
 
 on:
   push:
-    branches: [main]
+    branches: [refresh]
     tags: ['v*']
 
 concurrency:

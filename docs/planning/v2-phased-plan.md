@@ -1,7 +1,7 @@
 ---
 status: partial
 created: 2026-09-23
-updated: 2026-10-05
+updated: 2026-10-06
 summary: "Phased build plan for v2, from scaffold to cutover, with exit criteria per phase."
 ---
 
@@ -68,7 +68,7 @@ the phases still need to do:
 - [x] Tooling: pnpm, ESLint encoding the coding preferences (`--max-warnings 0`),
       `vue-tsc --build` across app/worker/test projects, and Vitest in the Workers runtime.
 - [x] GitHub Actions: CI (lint, typecheck, test, build) on every push. The deploy
-      workflow (`main` → staging, `v*` → production) is gated on `DEPLOY_ENABLED`.
+      workflow (`refresh` → staging until cutover, `v*` → production) is gated on `DEPLOY_ENABLED`.
 - [x] `SETUP.md`, `README.md`, and `CLAUDE.md`. Turnstile setup is deferred to Phase 1.
 - [ ] **Provision staging (needs account access):** create the D1 database and buckets,
       fill in the IDs and Access vars in `wrangler.jsonc`, add the hostname to the Zero
@@ -283,6 +283,8 @@ visually.
 - [ ] Spot-check: open ten migrated entries and confirm the editor reproduces the saved PNG.
 - [ ] Cutover: point the production hostname at v2 and put v1 behind Access (read-only
       fallback) for a grace period.
+- [ ] Merge `refresh` into `main` and switch the staging trigger in `deploy.yml` back
+      to `main`.
 - [ ] Decommission: delete the Pages project and KV namespace. v1 R2 prefixes stay
       until Q5 (retention) is answered.
 
