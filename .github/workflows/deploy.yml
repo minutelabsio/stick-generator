@@ -1,7 +1,7 @@
 name: Deploy
 
 # Staging:    every push to refresh       → migrate + deploy --env staging
-# Production: every pushed tag matching v* → migrate + deploy --env production
+# Production: every pushed tag matching build-* → migrate + deploy --env production
 #
 # Disabled until setup is finished (see SETUP.md, "Enabling deploys"):
 #   - repo variable DEPLOY_ENABLED = true
@@ -14,7 +14,7 @@ name: Deploy
 on:
   push:
     branches: [refresh]
-    tags: ['v*']
+    tags: ['build-*']
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -25,9 +25,9 @@ jobs:
     if: vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'staging' }}
+    environment: ${{ startsWith(github.ref, 'refs/tags/build-') && 'production' || 'staging' }}
     env:
-      CLOUDFLARE_ENV: ${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'staging' }}
+      CLOUDFLARE_ENV: ${{ startsWith(github.ref, 'refs/tags/build-') && 'production' || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:

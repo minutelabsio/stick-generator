@@ -1,5 +1,5 @@
-// Releases the trunk's pushed head to production by pushing the next build tag (v1, v2,
-// …). The tag push is what deploys: .github/workflows/deploy.yml runs production on v*.
+// Releases the trunk's pushed head to production by pushing the next build tag
+// (build-1, build-2, …). The tag push is what deploys: deploy.yml runs production on build-*.
 // Usage: `pnpm prod:deploy`.
 import { execFileSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'
@@ -8,14 +8,14 @@ import { createInterface } from 'node:readline/promises'
 // Switch back to main at cutover, together with the staging trigger in deploy.yml.
 const TRUNK = 'refresh'
 const REMOTE = 'origin'
-const RELEASE_TAG = /^v(\d+)$/
+const RELEASE_TAG = /^build-(\d+)$/
 
 const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim()
 const lines = (output: string) => output.split('\n').filter(Boolean)
 
 function nextTag() {
-  const builds = lines(git('tag', '--list', 'v*')).map(tag => Number(RELEASE_TAG.exec(tag)?.[1] ?? 0))
-  return `v${Math.max(0, ...builds) + 1}`
+  const builds = lines(git('tag', '--list', 'build-*')).map(tag => Number(RELEASE_TAG.exec(tag)?.[1] ?? 0))
+  return `build-${Math.max(0, ...builds) + 1}`
 }
 
 // Releasing anything other than the pushed trunk head would ship code staging never ran.

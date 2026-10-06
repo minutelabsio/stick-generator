@@ -68,7 +68,7 @@ the phases still need to do:
 - [x] Tooling: pnpm, ESLint encoding the coding preferences (`--max-warnings 0`),
       `vue-tsc --build` across app/worker/test projects, and Vitest in the Workers runtime.
 - [x] GitHub Actions: CI (lint, typecheck, test, build) on every push. The deploy
-      workflow (`refresh` → staging until cutover, `v*` → production) is gated on `DEPLOY_ENABLED`.
+      workflow (`refresh` → staging until cutover, `build-*` → production) is gated on `DEPLOY_ENABLED`.
 - [x] `SETUP.md`, `README.md`, and `CLAUDE.md`. Turnstile setup is deferred to Phase 1.
 - [ ] **Provision staging (needs account access):** create the D1 database and buckets,
       fill in the IDs and Access vars in `wrangler.jsonc`, add the hostname to the Zero

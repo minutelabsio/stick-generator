@@ -88,7 +88,7 @@ staging or v1 token through on production.
 
 ## Enabling deploys
 
-`.github/workflows/deploy.yml` deploys `refresh` to staging and `v*` tags to production,
+`.github/workflows/deploy.yml` deploys `refresh` to staging and `build-*` tags to production,
 but only when the repo variable `DEPLOY_ENABLED` is `true`. Before turning it on:
 
 1. Finish provisioning (above) for the target environment.
@@ -106,7 +106,7 @@ the pushed head:
 pnpm prod:deploy
 ```
 
-Releases are numbered builds: `v1`, `v2`, and so on. The script refuses unless HEAD is
+Releases are numbered builds: `build-1`, `build-2`, and so on. The script refuses unless HEAD is
 exactly `origin/refresh`, so only what staging is running can ship, and refuses if HEAD
 is already tagged. After you confirm, it pushes the next tag, and the tag push runs the
 production deploy.
