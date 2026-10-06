@@ -103,13 +103,13 @@ Push to `refresh`, let staging deploy, and check it. Then, with `refresh` checke
 the pushed head:
 
 ```sh
-pnpm prod:deploy          # next patch, e.g. v2.0.3 → v2.0.4
-pnpm prod:deploy minor    # or major
+pnpm prod:deploy
 ```
 
-It refuses unless HEAD is exactly `origin/refresh`, so only what staging is running can
-ship, and refuses if HEAD is already tagged. After you confirm, it pushes the next `v*`
-tag, and the tag push runs the production deploy. The first release is `v2.0.0`.
+Releases are numbered builds: `v1`, `v2`, and so on. The script refuses unless HEAD is
+exactly `origin/refresh`, so only what staging is running can ship, and refuses if HEAD
+is already tagged. After you confirm, it pushes the next tag, and the tag push runs the
+production deploy.
 
 To deploy by hand, build with the environment selected. The Vite plugin bakes it into
 the output:

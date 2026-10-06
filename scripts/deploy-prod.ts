@@ -1,6 +1,6 @@
-// Releases the trunk's pushed head to production by pushing the next v* tag. The tag
-// push is what deploys: .github/workflows/deploy.yml runs the production job on v* tags.
-// Usage: `pnpm prod:deploy [patch|minor|major]` (default patch).
+// Releases the trunk's pushed head to production by pushing the next build tag (v1, v2,
+// …). The tag push is what deploys: .github/workflows/deploy.yml runs production on v*.
+// Usage: `pnpm prod:deploy`.
 import { execFileSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'
 
@@ -8,38 +8,14 @@ import { createInterface } from 'node:readline/promises'
 // Switch back to main at cutover, together with the staging trigger in deploy.yml.
 const TRUNK = 'refresh'
 const REMOTE = 'origin'
-const RELEASE_TAG = /^v(\d+)\.(\d+)\.(\d+)$/
-// v2 is the first version of the app to be tagged, so its releases start here.
-const FIRST_RELEASE: Version = [2, 0, 0]
-
-type Version = readonly [number, number, number]
-
-const BUMPS: Record<string, (version: Version) => Version> = {
-  major: ([major]) => [major + 1, 0, 0],
-  minor: ([major, minor]) => [major, minor + 1, 0],
-  patch: ([major, minor, patch]) => [major, minor, patch + 1],
-}
+const RELEASE_TAG = /^v(\d+)$/
 
 const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim()
 const lines = (output: string) => output.split('\n').filter(Boolean)
-const formatTag = (version: Version) => `v${version.join('.')}`
 
-function parseTag(tag: string): Version | null {
-  const match = RELEASE_TAG.exec(tag)
-  if (!match) return null
-  return [Number(match[1]), Number(match[2]), Number(match[3])]
-}
-
-function latestRelease() {
-  const tags = lines(git('tag', '--list', 'v*', '--sort=-v:refname'))
-  return tags.map(parseTag).find(version => version !== null) ?? null
-}
-
-function nextTag(bumpName: string) {
-  const bump = BUMPS[bumpName]
-  if (!bump) throw new Error(`Unknown bump "${bumpName}". Use one of: ${Object.keys(BUMPS).join(', ')}.`)
-  const latest = latestRelease()
-  return formatTag(latest ? bump(latest) : FIRST_RELEASE)
+function nextTag() {
+  const builds = lines(git('tag', '--list', 'v*')).map(tag => Number(RELEASE_TAG.exec(tag)?.[1] ?? 0))
+  return `v${Math.max(0, ...builds) + 1}`
 }
 
 // Releasing anything other than the pushed trunk head would ship code staging never ran.
@@ -70,9 +46,9 @@ function pushTag(tag: string) {
   }
 }
 
-async function release(bumpName: string) {
+async function release() {
   assertHeadIsPushedTrunk()
-  const tag = nextTag(bumpName)
+  const tag = nextTag()
   const commit = git('log', '-1', '--format=%h %s')
   if (!await confirm(`Tag ${commit} as ${tag} and deploy it to production?`)) {
     process.stdout.write('Cancelled. Nothing was tagged.\n')
@@ -84,7 +60,7 @@ async function release(bumpName: string) {
 
 // Every failure is a message for the person releasing, so skip the stack trace.
 try {
-  await release(process.argv[2] ?? 'patch')
+  await release()
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
   process.exitCode = 1
