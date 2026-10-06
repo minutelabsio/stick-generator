@@ -97,6 +97,20 @@ but only when the repo variable `DEPLOY_ENABLED` is `true`. Before turning it on
    `wrangler deploy` validates every binding.
 3. Set the repo variable `DEPLOY_ENABLED=true`.
 
+### Releasing to production
+
+Push to `refresh`, let staging deploy, and check it. Then, with `refresh` checked out at
+the pushed head:
+
+```sh
+pnpm prod:deploy          # next patch, e.g. v2.0.3 → v2.0.4
+pnpm prod:deploy minor    # or major
+```
+
+It refuses unless HEAD is exactly `origin/refresh`, so only what staging is running can
+ship, and refuses if HEAD is already tagged. After you confirm, it pushes the next `v*`
+tag, and the tag push runs the production deploy. The first release is `v2.0.0`.
+
 To deploy by hand, build with the environment selected. The Vite plugin bakes it into
 the output:
 

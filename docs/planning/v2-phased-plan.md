@@ -283,8 +283,8 @@ visually.
 - [ ] Spot-check: open ten migrated entries and confirm the editor reproduces the saved PNG.
 - [ ] Cutover: point the production hostname at v2 and put v1 behind Access (read-only
       fallback) for a grace period.
-- [ ] Merge `refresh` into `main` and switch the staging trigger in `deploy.yml` back
-      to `main`.
+- [ ] Merge `refresh` into `main` and switch the staging trigger in `deploy.yml` and
+      `TRUNK` in `scripts/deploy-prod.ts` back to `main`.
 - [ ] Decommission: delete the Pages project and KV namespace. v1 R2 prefixes stay
       until Q5 (retention) is answered.
 
