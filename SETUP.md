@@ -43,12 +43,12 @@ environment from `wrangler.jsonc`. Migrations are applied before the tests run.
 
 ## Environments
 
-| Env | Where | D1 | R2 buckets | Access |
-|-----|-------|----|------------|--------|
-| `dev` | local only | local | local | bypassed on localhost |
-| `test` | local only (vitest) | local | local | test-signed tokens |
-| `staging` | Cloudflare | `stick-generator-staging` | `stick-figures-staging`, `stick-figures-assets-staging` | Zero Trust |
-| `production` | Cloudflare | `stick-generator-production` | the existing v1 buckets `stick-figures`, `stick-figures-assets` (v2 writes only under `v2/`) | Zero Trust |
+| Env | Where | Hostname | D1 | R2 buckets | Access |
+|-----|-------|----------|----|------------|--------|
+| `dev` | local only | `localhost` | local | local | bypassed on localhost |
+| `test` | local only (vitest) | none | local | local | test-signed tokens |
+| `staging` | Cloudflare | `stick-generator-staging.neptunestudios.info` | `stick-generator-staging` | `stick-figures-staging`, `stick-figures-assets-staging` | Zero Trust |
+| `production` | Cloudflare | `stick-generator.neptunestudios.info` | `stick-generator-production` | the existing v1 buckets `stick-figures`, `stick-figures-assets` (v2 writes only under `v2/`) | Zero Trust |
 
 ## Provisioning Cloudflare resources (one-time, per environment)
 
@@ -63,6 +63,11 @@ pnpm exec wrangler r2 bucket create stick-figures-assets-staging
 pnpm exec wrangler d1 create stick-generator-production   # prod buckets already exist from v1
 pnpm run db:migrate:staging
 ```
+
+Each hostname is a `custom_domain` route in `wrangler.jsonc`, so the first deploy creates
+its DNS record and certificate. That needs the `neptunestudios.info` zone in the same
+account and no existing DNS record for the hostname. Change domains here, not in the
+dashboard, so the config stays the source of truth.
 
 ### Zero Trust Access
 

@@ -55,6 +55,7 @@
     // TODO(setup): create the staging D1 database and buckets, then fill in the IDs below.
     // See SETUP.md, "Provisioning Cloudflare resources".
     "staging": {
+      "routes": [{ "pattern": "stick-generator-staging.neptunestudios.info", "custom_domain": true }],
       "vars": {
         "ACCESS_TEAM_DOMAIN": "TODO.cloudflareaccess.com",
         "ACCESS_AUD": "TODO"
@@ -71,6 +72,7 @@
     // TODO(setup): create the production D1 database, then fill in the ID below.
     // The buckets are the existing v1 buckets; v2 writes only under the v2/ prefix.
     "production": {
+      "routes": [{ "pattern": "stick-generator.neptunestudios.info", "custom_domain": true }],
       "vars": {
         "ACCESS_TEAM_DOMAIN": "TODO.cloudflareaccess.com",
         "ACCESS_AUD": "TODO"
