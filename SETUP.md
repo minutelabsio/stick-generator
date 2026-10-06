@@ -52,8 +52,8 @@ environment from `wrangler.jsonc`. Migrations are applied before the tests run.
 
 ## Provisioning Cloudflare resources (one-time, per environment)
 
-Not done yet. The staging and production entries in `wrangler.jsonc` hold `TODO`
-placeholders.
+Done for staging and production, and their IDs are in `wrangler.jsonc`. These are the
+commands, for reference or for rebuilding an environment:
 
 ```sh
 pnpm exec wrangler login
@@ -71,12 +71,17 @@ dashboard, so the config stays the source of truth.
 
 ### Zero Trust Access
 
-v1 is already behind a Zero Trust Access application. For each v2 hostname:
+Each v2 environment has its own self-hosted Access application covering its whole
+hostname. Don't share an application between environments or with v1: the Worker
+accepts any token with its application's AUD, so a shared application would let a
+staging or v1 token through on production.
 
-1. Add the hostname to the Access application, or create one with the same team policy.
+1. Create the application for the hostname, with the team's reusable Allow policy.
+   Do it before the first deploy, so the hostname is never live without Access.
 2. Copy the application's **AUD tag** into `ACCESS_AUD` and the team domain
-   (`<team>.cloudflareaccess.com`) into `ACCESS_TEAM_DOMAIN` for that environment in
-   `wrangler.jsonc`. Neither value is secret.
+   (`minuteearth.cloudflareaccess.com`, shared by every application on the account)
+   into `ACCESS_TEAM_DOMAIN` for that environment in `wrangler.jsonc`. Neither value
+   is secret.
 3. *(Phase 1, not yet)* Add a **Bypass** policy for exactly `/join` and `/api/public/*`.
    Nothing else may be bypassed. The Worker verifies the Access JWT on every other
    route, and a test enforces that.

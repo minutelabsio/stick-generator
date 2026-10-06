@@ -52,16 +52,14 @@
       ]
     },
 
-    // TODO(setup): create the staging D1 database and buckets, then fill in the IDs below.
-    // See SETUP.md, "Provisioning Cloudflare resources".
     "staging": {
       "routes": [{ "pattern": "stick-generator-staging.neptunestudios.info", "custom_domain": true }],
       "vars": {
-        "ACCESS_TEAM_DOMAIN": "TODO.cloudflareaccess.com",
-        "ACCESS_AUD": "TODO"
+        "ACCESS_TEAM_DOMAIN": "minuteearth.cloudflareaccess.com",
+        "ACCESS_AUD": "237b4516f595148917cfcd4fd0f9404b9651c1afdbefdb471bac23ccf0736aa8"
       },
       "d1_databases": [
-        { "binding": "DB", "database_name": "stick-generator-staging", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+        { "binding": "DB", "database_name": "stick-generator-staging", "database_id": "1bd39783-d5ee-466c-9fbc-43d994524128", "migrations_dir": "migrations" }
       ],
       "r2_buckets": [
         { "binding": "ASSET_BUCKET", "bucket_name": "stick-figures-assets-staging" },
@@ -69,16 +67,15 @@
       ]
     },
 
-    // TODO(setup): create the production D1 database, then fill in the ID below.
     // The buckets are the existing v1 buckets; v2 writes only under the v2/ prefix.
     "production": {
       "routes": [{ "pattern": "stick-generator.neptunestudios.info", "custom_domain": true }],
       "vars": {
-        "ACCESS_TEAM_DOMAIN": "TODO.cloudflareaccess.com",
-        "ACCESS_AUD": "TODO"
+        "ACCESS_TEAM_DOMAIN": "minuteearth.cloudflareaccess.com",
+        "ACCESS_AUD": "342ad50c0727f6c71d5a1b551c358b1817083983d7ffa650d9ea6b7a73442ba0"
       },
       "d1_databases": [
-        { "binding": "DB", "database_name": "stick-generator-production", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+        { "binding": "DB", "database_name": "stick-generator-production", "database_id": "47baa519-621c-49ec-a3dd-8731df29c5e9", "migrations_dir": "migrations" }
       ],
       "r2_buckets": [
         { "binding": "ASSET_BUCKET", "bucket_name": "stick-figures-assets" },
