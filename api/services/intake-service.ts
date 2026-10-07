@@ -1,5 +1,5 @@
 import { MAX_PHOTO_BYTES } from '../../shared/api-types'
-import type { JoinBatch } from '../../shared/api-types'
+import type { JoinBatch, ThankYouLink } from '../../shared/api-types'
 import { intakeStateOf } from '../../shared/batch-intake'
 import type { IntakeState } from '../../shared/batch-intake'
 import { DEFAULT_CONSENT_TEXT, DEFAULT_THANK_YOU_MESSAGE, IntakeSettings, parseAnswers } from '../../shared/intake'
@@ -52,11 +52,16 @@ const CLOSED_BATCH: JoinBatch = {
   instructions: '',
   questions: [],
   thankYouMessage: '',
+  thankYouLink: null,
   consentText: '',
   contactEmail: null,
 }
 
 const consentTextOf = (intake: IntakeSettings) => intake.consentText || DEFAULT_CONSENT_TEXT
+
+// IntakeSettings only accepts the label and link together, so the link stands for both.
+const thankYouLinkOf = (intake: IntakeSettings): ThankYouLink | null =>
+  intake.thankYouLinkUrl ? { label: intake.thankYouLinkLabel, url: intake.thankYouLinkUrl } : null
 
 interface CheckedImage {
   bytes: Uint8Array
@@ -93,6 +98,7 @@ export function createIntakeService({ db, figureBucket }: IntakeDependencies) {
         instructions: intake.instructions,
         questions: intake.questions,
         thankYouMessage: intake.thankYouMessage || DEFAULT_THANK_YOU_MESSAGE,
+        thankYouLink: thankYouLinkOf(intake),
         consentText: consentTextOf(intake),
         contactEmail,
       }

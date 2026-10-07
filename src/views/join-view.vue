@@ -164,11 +164,21 @@ onMounted(async () => {
         <p class="muted">
           Need to change something? {{ batch?.contactEmail ? `Email ${batch.contactEmail}.` : 'Reply to your invitation email.' }}
         </p>
-        <Button
-          label="Send another, for someone else"
-          severity="secondary"
-          @click="startAnother"
-        />
+        <div class="actions">
+          <Button
+            v-if="batch?.thankYouLink"
+            as="a"
+            :href="batch.thankYouLink.url"
+            :label="batch.thankYouLink.label"
+            class="cta"
+          />
+          <Button
+            label="Send another, for someone else"
+            severity="secondary"
+            :text="Boolean(batch?.thankYouLink)"
+            @click="startAnother"
+          />
+        </div>
       </template>
 
       <template v-else-if="batch?.state === 'closed'">
@@ -312,6 +322,16 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 0.6rem;
   font-weight: 400;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.cta {
+  text-decoration: none;
 }
 
 .preview {

@@ -11,6 +11,7 @@ export const MAX_TEXT_ANSWER_LENGTH = 2000
 export const DEFAULT_TEXT_MAX_LENGTH = 500
 const MAX_OTHER_LENGTH = 200
 const MAX_EMAIL_LENGTH = 200
+const MAX_URL_LENGTH = 2000
 
 export const DEFAULT_THANK_YOU_MESSAGE = 'Got it, thanks! We\'ll draw your stick figure soon.'
 export const DEFAULT_CONSENT_TEXT = 'I agree that my photo and answers can be used to draw my stick figure. Only the team sees them.'
@@ -83,6 +84,12 @@ export type QuestionOf<T extends QuestionType> = Extract<Question, { type: T }>
 
 export const QUESTION_TYPES = ['text', 'email', 'select', 'radio', 'image'] as const satisfies readonly QuestionType[]
 
+// Only https, so a saved link can never run script or point at a local file when clicked.
+const ThankYouLinkUrl = z.union([
+  z.literal(''),
+  z.url({ protocol: /^https$/, error: 'The thank-you button link must be a full address starting with https://.' }).max(MAX_URL_LENGTH),
+])
+
 export const IntakeSettings = z.object({
   instructions: plainText(2000, true).default(''),
   questions: z
@@ -95,9 +102,15 @@ export const IntakeSettings = z.object({
       `A form can ask for at most ${MAX_IMAGE_QUESTIONS} images besides the photo.`,
     ),
   thankYouMessage: plainText(1000, true).default(''),
+  // Optional button on the thank-you page that sends the follower elsewhere.
+  thankYouLinkLabel: plainText(60).default(''),
+  thankYouLinkUrl: z.string().transform(raw => cleanText(raw, { multiline: false })).pipe(ThankYouLinkUrl).default(''),
   consentText: plainText(1000, true).default(''),
   contactEmail: z.union([z.literal(''), z.email('The contact email isn\'t a valid email address.').max(MAX_EMAIL_LENGTH)]).default(''),
-})
+}).refine(
+  ({ thankYouLinkLabel, thankYouLinkUrl }) => Boolean(thankYouLinkLabel) === Boolean(thankYouLinkUrl),
+  { message: 'The thank-you button needs both a label and a link, or neither.', path: ['thankYouLinkUrl'] },
+)
 export type IntakeSettings = z.infer<typeof IntakeSettings>
 
 export const EMPTY_INTAKE_SETTINGS: IntakeSettings = IntakeSettings.parse({})

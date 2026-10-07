@@ -112,4 +112,18 @@ describe('IntakeSettings', () => {
 
     expect(IntakeSettings.safeParse({ questions }).success).toBe(false)
   })
+
+  // Followers click this link, so it must never be able to run script.
+  it('accepts only https links for the thank-you button', () => {
+    const withUrl = (thankYouLinkUrl: string) => IntakeSettings.safeParse({ thankYouLinkLabel: 'Shop', thankYouLinkUrl }).success
+
+    expect(withUrl('https://shop.example.com/mugs')).toBe(true)
+    expect(withUrl('javascript:alert(1)')).toBe(false)
+    expect(withUrl('http://shop.example.com')).toBe(false)
+  })
+
+  it('refuses a thank-you button with only a label or only a link', () => {
+    expect(IntakeSettings.safeParse({ thankYouLinkLabel: 'Shop' }).success).toBe(false)
+    expect(IntakeSettings.safeParse({ thankYouLinkUrl: 'https://shop.example.com' }).success).toBe(false)
+  })
 })

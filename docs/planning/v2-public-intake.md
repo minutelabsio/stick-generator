@@ -1,7 +1,7 @@
 ---
 status: planned
 created: 2026-09-23
-updated: 2026-10-05
+updated: 2026-10-07
 summary: "Follower intake via one expiring invite link per batch, replacing Google Forms. Includes the spam and abuse controls."
 ---
 
@@ -133,6 +133,7 @@ and saved whole.
 | `instructions` | Shown at the top of the join form: what the figure is for and what to send. Plain text, line breaks kept, ≤ 2000 characters | none |
 | `questions` | See [Questions](#questions) | empty |
 | `thankYouMessage` | Shown after a successful submit. Plain text, line breaks kept, ≤ 1000 characters | "Got it, thanks! We'll draw your stick figure soon." |
+| `thankYouLinkLabel` · `thankYouLinkUrl` | An optional button on the thank-you page that sends the follower elsewhere (e.g. the shop). Both or neither; the link must be `https://` so it can't run script. When set it is the main button, and "Send another" drops to a text button | none |
 | `consentText` | Shown next to the required checkbox. Each entry keeps the text it agreed to | default text (needs Q5 answered) |
 | `contactEmail` | Shown in the closed, full, and error messages | none |
 
@@ -282,14 +283,14 @@ Public (Zero Trust bypass, code in the `X-Join-Code` header):
 
 | Method + path | Purpose |
 |---------------|---------|
-| `GET /api/public/batch` | Validates the code. Returns `{ channelName, batchName, state: open\|closed\|full, closesAt, instructions, questions, thankYouMessage, consentText, contactEmail }`. A wrong code returns the same response as `closed`, except that a real closed batch names its contact email. That lets someone tell a once-real code from a made-up one, which is accepted: a closed code can submit nothing, and the email is meant for subscribers. The channel and batch names stay hidden |
+| `GET /api/public/batch` | Validates the code. Returns `{ channelName, batchName, state: open\|closed\|full, closesAt, instructions, questions, thankYouMessage, thankYouLink: { label, url } \| null, consentText, contactEmail }`. A wrong code returns the same response as `closed`, except that a real closed batch names its contact email. That lets someone tell a once-real code from a made-up one, which is accepted: a closed code can submit nothing, and the email is meant for subscribers. The channel and batch names stay hidden |
 | `POST /api/public/submission` | Multipart: `name`, `email`, `answers` (JSON, keyed by question id), `photo`, one `image:<questionId>` file per image answer, `consent`, `turnstileToken`. Creates one entry. Returns `{ ok: true }` |
 
 Team (Access):
 
 | Method + path | Purpose |
 |---------------|---------|
-| `GET` · `PUT /api/channels/:id/intake` | The channel's instructions, questions, thank-you message, consent text, and contact email |
+| `GET` · `PUT /api/channels/:id/intake` | The channel's instructions, questions, thank-you message and button, consent text, and contact email |
 | `PATCH /api/batches/:id` | Batch settings: name, open switch, close date, limit (and later the allowlist toggle) |
 | `POST /api/batches/:id/rotate-code` | New code. The old one is invalid immediately |
 | `GET /api/batches/:id/export.csv` | Every entry's responses: a column per question ever asked (current form first, matched by id), image file names as storage paths below `v2/`, and cells starting with `= + - @` prefixed with `'` so they can't run as formulas |
@@ -298,7 +299,7 @@ Team (Access):
 ## Team UI
 
 - **Channel → Intake form**: instructions, the questions editor (an ordered list, not a
-  form builder), thank-you message, consent text, and contact email.
+  form builder), thank-you message and button, consent text, and contact email.
 - **Batch → Intake**: rename, the open switch, close date, and limit, plus (later)
   allowlist upload and a **Preview** button that opens the join page in no-submit mode.
 - **Batch → Share**: the link and the code, each with a copy button, a live status

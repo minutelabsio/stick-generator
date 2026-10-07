@@ -124,8 +124,14 @@ export interface JoinBatch {
   instructions: string
   questions: Question[]
   thankYouMessage: string
+  thankYouLink: ThankYouLink | null
   consentText: string
   contactEmail: string | null
+}
+
+export interface ThankYouLink {
+  label: string
+  url: string
 }
 
 function tryParseJson(raw: string): unknown {

@@ -192,6 +192,23 @@ watch(() => props.channelSlug, loadIntake, { immediate: true })
             :placeholder="DEFAULT_THANK_YOU_MESSAGE"
           />
         </label>
+        <div class="pair">
+          <label>
+            <span>Thank-you button <span class="muted optional">optional, sends followers on after they submit</span></span>
+            <InputText
+              v-model="draft.thankYouLinkLabel"
+              placeholder="e.g. Back to the shop"
+            />
+          </label>
+          <label>
+            Button link
+            <InputText
+              v-model="draft.thankYouLinkUrl"
+              type="url"
+              placeholder="https://…"
+            />
+          </label>
+        </div>
         <label>
           <span>Contact email <span class="muted optional">shown when a batch is closed or full</span></span>
           <InputText
@@ -246,6 +263,12 @@ watch(() => props.channelSlug, loadIntake, { immediate: true })
   flex-direction: column;
   gap: 0.35rem;
   font-weight: 600;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
 }
 
 .optional {
