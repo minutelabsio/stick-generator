@@ -1,7 +1,7 @@
 ---
 status: partial
 created: 2026-09-23
-updated: 2026-10-06
+updated: 2026-10-07
 summary: "Phased build plan for v2, from scaffold to cutover, with exit criteria per phase."
 ---
 
@@ -190,7 +190,7 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
       URL fragment or is typed in, and is stripped from the address bar. Name + email,
       the channel's questions, photo picker with crop and downscale plus JPEG re-encode
       (strips EXIF), consent. Done so far: the channel's questions by type, instructions,
-      thank-you message, "Send another", and the full state. Still to do: a separate
+      thank-you message and optional button, and the full state. Still to do: a separate
       entry and photo crop. Clear states for open, closed, full, and submitted.
       Closed, full, and error states all name the contact email. Shows the channel's
       instructions above the form and its thank-you message after submitting.

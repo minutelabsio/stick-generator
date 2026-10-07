@@ -97,19 +97,6 @@ async function submit() {
   }
 }
 
-// People often answer for a partner or friend too, so the same link takes another.
-function startAnother() {
-  name.value = ''
-  answers.value = {}
-  otherAnswers.value = {}
-  imageAnswers.value = {}
-  consent.value = false
-  photo.value = null
-  if (photoPreviewUrl.value) URL.revokeObjectURL(photoPreviewUrl.value)
-  photoPreviewUrl.value = null
-  pageState.value = 'ready'
-}
-
 onMounted(async () => {
   const codeFromLink = location.hash.slice(1)
   // Keep the code out of the address bar, screenshots, and anything copied from it.
@@ -164,21 +151,13 @@ onMounted(async () => {
         <p class="muted">
           Need to change something? {{ batch?.contactEmail ? `Email ${batch.contactEmail}.` : 'Reply to your invitation email.' }}
         </p>
-        <div class="actions">
-          <Button
-            v-if="batch?.thankYouLink"
-            as="a"
-            :href="batch.thankYouLink.url"
-            :label="batch.thankYouLink.label"
-            class="cta"
-          />
-          <Button
-            label="Send another, for someone else"
-            severity="secondary"
-            :text="Boolean(batch?.thankYouLink)"
-            @click="startAnother"
-          />
-        </div>
+        <Button
+          v-if="batch?.thankYouLink"
+          as="a"
+          :href="batch.thankYouLink.url"
+          :label="batch.thankYouLink.label"
+          class="cta"
+        />
       </template>
 
       <template v-else-if="batch?.state === 'closed'">
@@ -322,12 +301,6 @@ onMounted(async () => {
   align-items: flex-start;
   gap: 0.6rem;
   font-weight: 400;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
 }
 
 .cta {

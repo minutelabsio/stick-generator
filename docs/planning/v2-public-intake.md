@@ -133,7 +133,7 @@ and saved whole.
 | `instructions` | Shown at the top of the join form: what the figure is for and what to send. Plain text, line breaks kept, ≤ 2000 characters | none |
 | `questions` | See [Questions](#questions) | empty |
 | `thankYouMessage` | Shown after a successful submit. Plain text, line breaks kept, ≤ 1000 characters | "Got it, thanks! We'll draw your stick figure soon." |
-| `thankYouLinkLabel` · `thankYouLinkUrl` | An optional button on the thank-you page that sends the follower elsewhere (e.g. the shop). Both or neither; the link must be `https://` so it can't run script. When set it is the main button, and "Send another" drops to a text button | none |
+| `thankYouLinkLabel` · `thankYouLinkUrl` | An optional button on the thank-you page that sends the follower elsewhere (e.g. the shop). Both or neither; the link must be `https://` so it can't run script. The page has no other button | none |
 | `consentText` | Shown next to the required checkbox. Each entry keeps the text it agreed to | default text (needs Q5 answered) |
 | `contactEmail` | Shown in the closed, full, and error messages | none |
 
