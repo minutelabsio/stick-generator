@@ -312,23 +312,17 @@ visually.
       `updated_by`/`updated_at`). This is not real-time locking.
 - [ ] Empty, loading, and error states across all screens. Errors explain why.
 
-**Exit:** designers report the queue-to-done loop is faster than v1. The export zip
-feeds the mug script directly.
+**Exit:** designers report the queue-to-done loop is faster than v1.
 
 ---
 
-## Phase 6: Hardening and output
+## Phase 6: Hardening
 
-**Goal:** optional hardening and reproducible print output. Every item here can ship
-on its own.
+**Goal:** optional hardening. Every item here can ship on its own.
 
 - [ ] **Email ownership check** (optional; only if impersonation via a shared link
       becomes a real problem). The join page emails a 6-digit code before accepting a
       submission, using Cloudflare Email Service with a verified sending domain.
-- [ ] Mug pipeline: commit `mug-template.jpg` and both ICC profiles (or record where they
-      live). Make `create-mugs.sh` take the export zip as input. Document it in `SETUP.md`.
-- [ ] Optional (Q7): an in-app mug mockup preview, which is just a browser canvas
-      composite, sRGB only.
 - [ ] "Purge photos" on archived groups (Q5). It deletes likeness objects, clears
       `likeness_key`, drops IP hashes, and clears the allowlist.
 

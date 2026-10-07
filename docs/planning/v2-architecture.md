@@ -1,7 +1,7 @@
 ---
 status: planned
 created: 2026-09-23
-updated: 2026-10-02
+updated: 2026-10-07
 summary: "Target design for v2. One Worker with Hono API and SPA, D1 for records, R2 for images, Access for auth, batch invite-link intake."
 ---
 
@@ -25,7 +25,8 @@ Requirements baseline: [v1-functionality.md](./v1-functionality.md#what-v2-must-
 - Follower accounts, or any follower-facing feature beyond the single intake page.
 - Server-side rendering of figures. The browser canvas already does this well, and
   Workers have no canvas.
-- Print-colour (CMYK) conversion in the app. It stays an offline step. See Phase 6.
+- Print output, such as merchandise mockups or CMYK conversion. Mugs were a one-time run,
+  and `scripts/mugs/` stays only as a record of how they were made.
 
 ## Stack
 
@@ -269,4 +270,4 @@ the submission lands directly in D1 and R2. The full design, including the spam 
 | Q4 | ~~Google Form ownership~~ Superseded. Intake moves to invite links. See the open questions in [v2-public-intake.md](./v2-public-intake.md#open-questions) | Resolved |
 | Q5 | How long should follower photos and emails be kept after a batch is done? (The consent text needs this answer) | Offer "purge photos" per archived group |
 | Q6 | Typical batch size? (dozens vs. thousands changes whether export zips stream in the Worker or build in the browser) | Up to a few hundred. Stream the zip in the Worker |
-| Q7 | Should the mug mockup move into the app (browser canvas preview, no CMYK) or stay a script? | Stay a script. Move the template into the repo |
+| Q7 | ~~Should the mug mockup move into the app or stay a script?~~ Dropped. Mugs were a one-time run, so there is no print output to plan for | Resolved |
