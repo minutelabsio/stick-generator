@@ -23,8 +23,8 @@ const INTAKE = {
     { id: 'size', type: 'radio', label: 'Mug size', options: ['Small', 'Large'] },
     { id: 'pet', type: 'image', label: 'Your pet' },
   ],
-  thankYouLinkLabel: 'Visit the shop',
-  thankYouLinkUrl: 'https://shop.example.com',
+  thankYouLinkLabel: 'Visit our site',
+  thankYouLinkUrl: 'https://example.com',
   contactEmail: 'team@example.com',
 }
 
@@ -96,7 +96,7 @@ describe('public intake', () => {
     expect(batch).toMatchObject({ state: 'open', channelName: `Channel ${CHANNEL_ID}`, instructions: 'Send a clear photo.' })
     expect(batch.questions.map(question => question.id)).toEqual(['hair', 'size', 'pet'])
     expect(batch.consentText).toBe(DEFAULT_CONSENT_TEXT)
-    expect(batch.thankYouLink).toEqual({ label: 'Visit the shop', url: 'https://shop.example.com' })
+    expect(batch.thankYouLink).toEqual({ label: 'Visit our site', url: 'https://example.com' })
   })
 
   // The closed message names the contact email, which an unknown code can't know.

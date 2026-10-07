@@ -197,7 +197,7 @@ watch(() => props.channelSlug, loadIntake, { immediate: true })
             <span>Thank-you button <span class="muted optional">optional, sends followers on after they submit</span></span>
             <InputText
               v-model="draft.thankYouLinkLabel"
-              placeholder="e.g. Back to the shop"
+              placeholder="e.g. Back to our site"
             />
           </label>
           <label>
