@@ -24,6 +24,8 @@ const ORIGINAL_INTAKE = IntakeSettings.parse({
     { id: 'mug', type: 'radio', label: 'Mug size', options: ['Regular', 'Large'], required: true },
   ],
   thankYouMessage: 'Got it! Your mug will ship once the batch is drawn.',
+  thankYouLinkLabel: 'Browse the shop',
+  thankYouLinkUrl: 'https://shop.example.com',
   contactEmail: 'team@example.com',
 })
 
