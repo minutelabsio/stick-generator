@@ -16,16 +16,15 @@ interface SeedChannel {
 
 // Parsed so a seed form that breaks the rules fails here, not in the app.
 const ORIGINAL_INTAKE = IntakeSettings.parse({
-  instructions: 'Thanks for supporting us! We\'ll draw you as a stick figure for your mug.\nA clear photo of your face works best.',
+  instructions: 'Thanks for supporting us! We\'ll draw you as a stick figure.\nA clear photo of your face works best.',
   questions: [
     { id: 'hair', type: 'text', label: 'Describe your hair', required: true, highlight: true, maxLength: 200 },
     { id: 'hobby', type: 'text', label: 'A hobby or favourite thing', highlight: true, maxLength: 200 },
     { id: 'colour', type: 'select', label: 'Favourite colour', options: ['Red', 'Blue', 'Green'], allowOther: true, highlight: true },
-    { id: 'mug', type: 'radio', label: 'Mug size', options: ['Regular', 'Large'], required: true },
   ],
-  thankYouMessage: 'Got it! Your mug will ship once the batch is drawn.',
-  thankYouLinkLabel: 'Browse the shop',
-  thankYouLinkUrl: 'https://shop.example.com',
+  thankYouMessage: 'Got it! We\'ll share your stick figure once the batch is drawn.',
+  thankYouLinkLabel: 'See past stick figures',
+  thankYouLinkUrl: 'https://example.com/gallery',
   contactEmail: 'team@example.com',
 })
 
