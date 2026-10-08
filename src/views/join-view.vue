@@ -41,6 +41,8 @@ async function loadBatch(code: string) {
   try {
     joinCode.value = normalizeJoinCode(code)
     batch.value = await api.getJoinBatch(joinCode.value)
+    // Keep the code in the address bar so a refresh comes back to this batch, typed codes included.
+    history.replaceState(null, '', `${location.pathname}#${joinCode.value}`)
     pageState.value = 'ready'
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error)
@@ -99,8 +101,6 @@ async function submit() {
 
 onMounted(async () => {
   const codeFromLink = location.hash.slice(1)
-  // Keep the code out of the address bar, screenshots, and anything copied from it.
-  history.replaceState(null, '', location.pathname)
   if (!codeFromLink) {
     pageState.value = 'enter-code'
     return

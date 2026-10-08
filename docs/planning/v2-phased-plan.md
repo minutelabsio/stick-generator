@@ -1,7 +1,7 @@
 ---
 status: partial
 created: 2026-09-23
-updated: 2026-10-07
+updated: 2026-10-08
 summary: "Phased build plan for v2, from scaffold to cutover, with exit criteria per phase."
 ---
 
@@ -187,7 +187,7 @@ Full design: [v2-public-intake.md](./v2-public-intake.md).
 - [ ] Zero Trust: add a bypass policy for `/join` and `/api/public/*` only. Add a route
       enumeration test proving every other route needs the Access JWT.
 - [ ] Join page (a separate lightweight entry, mobile-first). The code comes from the
-      URL fragment or is typed in, and is stripped from the address bar. Name + email,
+      URL fragment or is typed in, and stays in the address bar so a refresh keeps the batch. Name + email,
       the channel's questions, photo picker with crop and downscale plus JPEG re-encode
       (strips EXIF), consent. Done so far: the channel's questions by type, instructions,
       thank-you message and optional button, and the full state. Still to do: a separate

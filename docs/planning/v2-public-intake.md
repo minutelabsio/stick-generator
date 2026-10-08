@@ -1,7 +1,7 @@
 ---
 status: planned
 created: 2026-09-23
-updated: 2026-10-07
+updated: 2026-10-08
 summary: "Follower intake via one expiring invite link per batch, replacing Google Forms. Includes the spam and abuse controls."
 ---
 
@@ -84,8 +84,8 @@ write-once and removes a whole class of "who is allowed to edit this" problems.
   and a person can still type it.
 - The link is `https://<host>/join#<code>`. The fragment keeps the code out of server
   logs and `Referer` headers. Email link scanners that pre-open the link do nothing,
-  because **no GET request ever changes state**. The join page strips the fragment from
-  the address bar, then sends the code in a header. `/join` without a code shows a
+  because **no GET request ever changes state**. The join page sends the code in a header and
+  leaves the fragment in the address bar, so a refresh reopens the same batch. `/join` without a code shows a
   "type your code" box.
 - The code is stored in plain text, because the team needs to copy the link again at
   any time and it is already shared with many people. Its protection is expiry and
